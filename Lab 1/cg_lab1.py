@@ -38,24 +38,24 @@ def getLineSegment():
     l1.draw(win)
     return  l1
 
-print("********* Computational Geometry : Lab1 **************")
-print("Dimension of the canvas is 500x500")
-print()
-#try:
-if True:
-    win = GraphWin("CG Lab1", 500, 500)
-    l1 = getLineSegment()
-    print('\nInsert point to compare: ')
-    ax = int(input('insert x-co-ordinate: '))
-    ay = int(input('insert y-co-ordinate: '))
-    status = l1.where_does_this_point_lie(ax,ay)
-    print('The given point lies in ',status)
-    p = Pointt(ax,ay)
-    p.draw(win)
-    input("1Terminating.....")
-    win.close()
-# =============================================================================
-# except:
-#     input("2Terminating......")
-#     win.close()
-# =============================================================================
+
+if __name__ == '__main__':
+    print("********* Computational Geometry : Lab1 **************")
+    print("Dimension of the canvas is 500x500")
+    print()
+    try:
+        win = GraphWin("CG Lab1", 500, 500)
+        l1 = getLineSegment()
+        print('\nInsert point to compare: ')
+        ax = int(input('insert x-co-ordinate: '))
+        ay = int(input('insert y-co-ordinate: '))
+        status = l1.where_does_this_point_lie(ax,ay)
+        print('The given point lies in ',status)
+        p = Pointt(ax,ay)
+        p.draw(win)
+        input("Terminating.....")
+        win.close()
+    except:
+        input("Terminating......")
+        print("ERROR!!!!")
+        win.close()
