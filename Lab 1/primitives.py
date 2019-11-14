@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 """
+primitives.py
 Created on Mon Nov 11 15:42:40 2019
 
 @author: GRegAtom
 """
 from graphics import *
 
+# =============================================================================
+# class Pointt and LineSegment is build as part of Lab1:
+# =============================================================================
+    
 class Pointt:
     xc = None
     yc = None
@@ -58,9 +63,8 @@ class LineSegment:
     def draw(self,window,color='black'):
         c = Line(Point(self.Point_A.xc,self.Point_A.yc), Point(self.Point_B.xc,self.Point_B.yc))
         c.draw(window)
-        
-    def where_does_this_point_lie(self,x,y):
-        
+
+    def where_does_this_point_lie(self,x,y):        
         if(self.Point_A.xc==self.Point_B.xc):#x-co-ordinate is same
             if(self.Point_A.yc==self.Point_B.yc):#if both ends, point A and point B, is same point
                 return "A==B"
@@ -71,7 +75,9 @@ class LineSegment:
                     elif y<self.Point_A.yc and y<self.Point_B.yc:
                         return 'behind'
                     else:
-                        return 'between'        
+                        return 'between'  
+                else:
+                    return 'unknown 0'
         elif x==self.Point_A.xc and y==self.Point_A.yc:#checking if the point is Point_A of linesegment
             return 'start'
         elif x==self.Point_B.xc and y==self.Point_B.yc:#checking if the point is Point_B of linesegment
@@ -100,4 +106,118 @@ class LineSegment:
                     return 'unknown A'
             else:
                 return 'unknown B'
-                
+   
+# =============================================================================
+# class Operations and its functions:
+# getPointFromInput ,Three_Point_Area, isCollinear and where_is_it 
+# are build as part of lab2:
+# =============================================================================
+    
+class Operations:
+    @staticmethod
+    def getPointFromInput():
+        val = input("point(x,y): ")
+        if val.find(','):
+            coords = val.split(',')
+            if len(coords)==2:
+                if coords[0].isdigit() and coords[1].isdigit():
+                    return Pointt(coords[0],coords[1])
+                else:
+                    print('co-ordinates must be integers')
+                    return Operations.getPointFromInput()    
+            else:
+                print("Input x and y co-ordinate of the point in the form x,y: ")
+                return Operations.getPointFromInput()               
+        else:            
+            print("Input x and y co-ordinate of the point in the form x,y: ")
+            return Operations.getPointFromInput()            
+        print(val,type(val))
+        
+    @staticmethod
+    def getLineSegmentFromInput():
+        print("Input start point of the line, A:")
+        p1 = Operations.getPointFromInput()
+        print()
+        print("Input terminal point of the line, B:")
+        p2 = Operations.getPointFromInput()
+        print()
+        return LineSegment(p1,p2)
+        
+        
+    @staticmethod
+    def Three_Point_Area(a: Pointt,c: Pointt,b: Pointt):   
+        #calculating area of triangle formed by joining point b to end points of line ac     
+        A = a.xc*(b.yc-c.yc)
+        B = b.xc*(c.yc-a.yc)
+        C = c.xc*(a.yc-b.yc)
+        
+        area = (A+B+C)/2
+        return area
+    
+    @staticmethod
+    def isCollinear(line: LineSegment,point: Pointt):
+        if type(line)!=type(LineSegment()):
+            return 'notlinesegment'
+        if type(point)!=type(Pointt()):
+            return 'notpointt'
+        
+        area = Operations.Three_Point_Area(line.Point_A,line.Point_B,point)
+        
+        if area==0:
+            if line.Point_A.xc==line.Point_B.xc:#if line is vertical line
+                if line.Point_A.yc>point.yc and line.Point_B.yc>point.yc:
+                    return 'behind'
+                elif line.Point_A.yc<point.yc and line.Point_B.yc<point.yc:
+                    return 'beyond'
+                else:
+                    return 'between'
+            else:#if line is not vertical
+                if line.Point_A.xc>point.xc and line.Point_B.xc>point.xc:
+                    return 'behind'
+                elif line.Point_A.xc<point.xc and line.Point_B.xc<point.xc:
+                    return 'beyond'
+                else:
+                    return 'between'
+        else:
+            return False  
+        
+    @staticmethod
+    def where_is_it(line: LineSegment,point: Pointt):
+        if type(line)!=type(LineSegment()):
+            return 'notlinesegment'
+        if type(point)!=type(Pointt()):
+            return 'notpointt'
+        
+        area = Operations.Three_Point_Area(line.Point_A ,line.Point_B ,point)
+        # =============================================================================
+        # here the logic is opposite to actual co-ordinate geometry
+        # and it is because in co-ordinate geometry, y-axis goes-up-increasing
+        # where in computer-graphics, y-axis goes-down-increasing
+        # =============================================================================
+        if area<0:
+            return 'right'
+        elif area>0:
+            return 'left'
+        else:
+            return 'collinear'
+        
+        
+      
+if __name__ == '__main__':
+    print("********* primitives.py **************")
+    print("Dimension of the canvas is 500x500")
+    print()
+    try:
+        pass
+        win = GraphWin("graph primitives", 500, 500)
+        line = LineSegment(Pointt(200,200),Pointt(100,100))
+        line.draw(win)
+        point = Pointt(390,100)
+        point.draw(win)
+        stat = Operations.where_is_it(line,point)  
+        print(stat) 
+        win.getMouse()
+        win.close()
+    except GraphicsError as e:
+        print("ERROR!!!!",sys.exc_info()[0],e)
+        win.close()
