@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """
+cg_lab1.py
 Created on Mon Nov 11 15:42:40 2019
 
 @author: GRegAtom
@@ -7,15 +8,6 @@ Created on Mon Nov 11 15:42:40 2019
 
 from primitives import * 
 from graphics import *  
-
-def main():
-    try:
-        c = Circle(Point(250,250), 200)
-        c.draw(win)
-        win.getMouse() # pause for click in window
-        win.close()
-    except:
-        print('Terminating');
 
 def getLineSegment():
     ax = input("Enter x co-ordinate for line A: ")    
