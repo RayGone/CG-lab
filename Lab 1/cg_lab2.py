@@ -4,7 +4,8 @@ cg_lab2.py
 Created on Thu Nov 14 21:49:09 2019
 @author: GRegAtom
 """
-from primitives import * 
+from primitives import Pointt,LineSegment,Operations
+from graphics import *
 
 if __name__ == '__main__':  
     print('\n\n')  
@@ -22,7 +23,13 @@ if __name__ == '__main__':
         print("Input Test point P:")
         P = Operations.getPointFromInput()
         P.draw(win)
-        print(P,'\n')
+        print(P,'\n')        
+        win.getMouse()
+
+        L2 = LineSegment(L.Point_B,P)
+        L2.drawDashedLine(10,win)
+        L.Point_A.draw(win)
+        L.Point_B.draw(win)
 
         area = Operations.Three_Point_Area(L.Point_A,L.Point_B,P)
         where = Operations.where_is_it(L,P)
