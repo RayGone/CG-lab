@@ -6,6 +6,7 @@ Created on Mon Nov 11 15:42:40 2019
 @author: GRegAtom
 """
 from graphics import *
+import math
 
 # =============================================================================
 # class Pointt and LineSegment is build as part of Lab1:
@@ -39,7 +40,7 @@ class Pointt:
 class LineSegment:
     Point_A = None
     Point_B = None
-            
+ 
     def __init__(self,p1=None,p2=None):
         if(p1==None or p2==None):
             self.Point_A = Pointt()
@@ -60,6 +61,85 @@ class LineSegment:
         cls.Point_B = p2
         return cls
     
+    def BresenhamLine(self): 
+        try:     
+            print(self.Point_A,self.Point_B)
+            #calculating bresenham line points  
+            m_new = 2 * (self.Point_B.yc - self.Point_A.yc)  
+            slope_error_new = m_new - (self.Point_B.xc - self.Point_A.xc) 
+        
+            y=self.Point_A.yc 
+            point_list = []
+            for x in range(abs(self.Point_A.xc-self.Point_B.xc)):  
+                point_list.append([x+self.Point_A.xc,y])
+        
+                # Add slope to increment angle formed  
+                slope_error_new =slope_error_new + m_new  
+        
+                # Slope error reached limit, time to  
+                # increment y and update slope error.  
+                if (slope_error_new >= 0):  
+                    y=y+1
+                    slope_error_new =slope_error_new - 2 * (self.Point_B.xc - self.Point_A.xc)  
+            #-------line points are added to point_list on line 75
+            return point_list        
+        except:
+            print('error',sys.exc_info[0])
+
+    def dashedLine(self,spacing=5):
+        #----creating list of lines to 
+        point_list = self.BresenhamLine()
+        list_of_lines = []
+        if len(point_list) > (2*spacing):
+            number_of_points = len(point_list)
+            number_of_breakpoints = math.floor(number_of_points/spacing)                
+            if number_of_breakpoints%2 == 0:#if even number of breakpoints
+                print('even')
+                for x in range(number_of_breakpoints):
+                    if x%2==0:
+                        line = LineSegment(Pointt(point_list[0][0],point_list[0][1]),Pointt(point_list[2][0],point_list[2][1]))
+                        list_of_lines.append(line)
+                        continue
+                    start_point = x*spacing
+                    end_point = (x+1)*spacing
+                    p1 = Pointt(point_list[start_point][0],point_list[start_point][1])
+                    if x==number_of_breakpoints-1:                        
+                        p2 = Pointt(point_list[len(point_list)-1][0],point_list[len(point_list)-1][1])
+                    else:
+                        p2 = Pointt(point_list[end_point][0],point_list[end_point][1])
+                    line = LineSegment(p1,p2)
+                    list_of_lines.append(line)
+                    print(line)
+            else:#if odd number of breakpoints
+                print('odd')
+                for x in range(number_of_breakpoints):
+                    if x%2!=0: 
+                        continue
+                    start_point = x*spacing
+                    end_point = (x+1)*spacing
+                    p1 = Pointt(point_list[start_point][0],point_list[start_point][1])
+                    if x==number_of_breakpoints-1:                        
+                        p2 = Pointt(point_list[len(point_list)-1][0],point_list[len(point_list)-1][1])
+                    else:
+                        p2 = Pointt(point_list[end_point][0],point_list[end_point][1])
+                    line = LineSegment(p1,p2)
+                    list_of_lines.append(line)
+                    print(line)
+            
+            return list_of_lines
+        else:
+            return [self]
+
+    def drawDashedLine(self,spacing,window):
+        line_list = self.dashedLine(spacing)
+
+        line_list[0].Point_A.draw(window)
+        line_list[len(line_list)-1].Point_B.draw(window)
+
+        for x in range(len(line_list)):
+            line_list[x].draw(window)    
+
+
     def draw(self,window,color='black'):
         c = Line(Point(self.Point_A.xc,self.Point_A.yc), Point(self.Point_B.xc,self.Point_B.yc))
         c.draw(window)
@@ -121,7 +201,8 @@ class Operations:
             coords = val.split(',')
             if len(coords)==2:
                 if coords[0].isdigit() and coords[1].isdigit():
-                    return Pointt(coords[0],coords[1])
+                    p = Pointt(coords[0],coords[1])
+                    return p
                 else:
                     print('co-ordinates must be integers')
                     return Operations.getPointFromInput()    
@@ -131,7 +212,7 @@ class Operations:
         else:            
             print("Input x and y co-ordinate of the point in the form x,y: ")
             return Operations.getPointFromInput()            
-        print(val,type(val))
+        # print(val,type(val))
         
     @staticmethod
     def getLineSegmentFromInput():
@@ -201,8 +282,8 @@ class Operations:
         else:
             return 'collinear'
         
-        
-      
+
+
 if __name__ == '__main__':
     print("********* primitives.py **************")
     print("Dimension of the canvas is 500x500")
@@ -212,8 +293,16 @@ if __name__ == '__main__':
         win = GraphWin("graph primitives", 500, 500)
         line = LineSegment(Pointt(200,200),Pointt(100,100))
         line.draw(win)
+        line.Point_A.draw(win)
+        line.Point_B.draw(win)
+
         point = Pointt(390,100)
         point.draw(win)
+
+        line2 = LineSegment(line.Point_B,point)
+        line2.drawDashedLine(10,win)
+        line2.Point_A.draw(win)
+        line2.Point_B.draw(win)
         stat = Operations.where_is_it(line,point)  
         print(stat) 
         win.getMouse()
