@@ -23,8 +23,7 @@ if __name__ == '__main__':
         print("Input Test point P:")
         P = Operations.getPointFromInput()
         P.draw(win)
-        print(P,'\n')        
-        win.getMouse()
+        print(P,'\n')   
 
         L2 = LineSegment(L.Point_B,P)
         L2.drawDashedLine(10,win)

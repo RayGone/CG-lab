@@ -61,30 +61,53 @@ class LineSegment:
         cls.Point_B = p2
         return cls
     
-    def BresenhamLine(self): 
-        try:     
-            print(self.Point_A,self.Point_B)
-            #calculating bresenham line points  
-            m_new = 2 * (self.Point_B.yc - self.Point_A.yc)  
-            slope_error_new = m_new - (self.Point_B.xc - self.Point_A.xc) 
+    def BresenhamLine(self):   
+        point_list = []
         
-            y=self.Point_A.yc 
-            point_list = []
-            for x in range(abs(self.Point_A.xc-self.Point_B.xc)):  
-                point_list.append([x+self.Point_A.xc,y])
+        dx = self.Point_A.xc - self.Point_B.xc
+        dy = self.Point_A.yc - self.Point_B.yc
+        stepx = 0
+        stepy = 0
+        xc = self.Point_A.xc
+        yc = self.Point_A.yc
+        point_list.append([xc,yc])
+        if dy<0:
+            dy = -dy
+            stepy = 1
+        else:
+            stepy = -1
         
-                # Add slope to increment angle formed  
-                slope_error_new =slope_error_new + m_new  
-        
-                # Slope error reached limit, time to  
-                # increment y and update slope error.  
-                if (slope_error_new >= 0):  
-                    y=y+1
-                    slope_error_new =slope_error_new - 2 * (self.Point_B.xc - self.Point_A.xc)  
-            #-------line points are added to point_list on line 75
-            return point_list        
-        except:
-            print('error',sys.exc_info[0])
+        if dx<0:
+            dx = -dx
+            stepx = 1
+        else:
+            stepx = -1
+
+        dy = 2*dy
+        dx = 2*dx
+
+        if dx>dy:
+            fraction = dy-math.ceil(dx/2)
+            for x in range(int(abs(dx/2))):
+                xc = xc + stepx
+                if fraction>=0:
+                    yc = stepy+yc
+                    fraction = fraction - dx
+                fraction = fraction + dy
+                x
+                point_list.append([xc,yc])
+        else:
+            # print('else')
+            fraction = dx-math.ceil(dy/2)
+            for y in range(int(abs(dy/2))):
+                if fraction>=0:
+                    xc = stepx+xc
+                    fraction = fraction - dy
+                yc = yc+stepy
+                fraction = fraction + dx
+                y
+                point_list.append([xc,yc])
+        return point_list
 
     def dashedLine(self,spacing=5):
         #----creating list of lines to 
@@ -94,7 +117,7 @@ class LineSegment:
             number_of_points = len(point_list)
             number_of_breakpoints = math.floor(number_of_points/spacing)                
             if number_of_breakpoints%2 == 0:#if even number of breakpoints
-                print('even')
+                # print('even')
                 for x in range(number_of_breakpoints):
                     if x%2==0:
                         line = LineSegment(Pointt(point_list[0][0],point_list[0][1]),Pointt(point_list[2][0],point_list[2][1]))
@@ -109,9 +132,9 @@ class LineSegment:
                         p2 = Pointt(point_list[end_point][0],point_list[end_point][1])
                     line = LineSegment(p1,p2)
                     list_of_lines.append(line)
-                    print(line)
+
             else:#if odd number of breakpoints
-                print('odd')
+                # print('odd')
                 for x in range(number_of_breakpoints):
                     if x%2!=0: 
                         continue
@@ -124,7 +147,6 @@ class LineSegment:
                         p2 = Pointt(point_list[end_point][0],point_list[end_point][1])
                     line = LineSegment(p1,p2)
                     list_of_lines.append(line)
-                    print(line)
             
             return list_of_lines
         else:
@@ -291,21 +313,23 @@ if __name__ == '__main__':
     try:
         pass
         win = GraphWin("graph primitives", 500, 500)
-        line = LineSegment(Pointt(200,200),Pointt(100,100))
+        line = LineSegment(Pointt(200,20),Pointt(250,250))
         line.draw(win)
         line.Point_A.draw(win)
         line.Point_B.draw(win)
 
-        point = Pointt(390,100)
+        point = Pointt(0,100)
         point.draw(win)
 
         line2 = LineSegment(line.Point_B,point)
-        line2.drawDashedLine(10,win)
+        line2.drawDashedLine(5,win)
+        # line2.draw(win)
+
         line2.Point_A.draw(win)
         line2.Point_B.draw(win)
         stat = Operations.where_is_it(line,point)  
         print(stat) 
-        win.getMouse()
+        input()
         win.close()
     except GraphicsError as e:
         print("ERROR!!!!",sys.exc_info()[0],e)
