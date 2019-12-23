@@ -351,7 +351,7 @@ class Operations:
             return 'collinear'
 
     @staticmethod
-    def intersection_check(line1: LineSegment,line2: LineSegment):
+    def intersects(line1: LineSegment,line2: LineSegment):
         test_a1 = Operations.turnTest(line1,line2.Point_A)
         if test_a1 == 'collinear':
             temp = Operations.isCollinear(line1,line2.Point_A)
