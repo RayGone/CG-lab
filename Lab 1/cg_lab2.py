@@ -56,9 +56,9 @@ if __name__ == '__main__':
                 while True:
                     print('Input Line 2: \n')
                     L2 = Operations.getLineSegmentFromInput()
-                    print(L1,'\n')
+                    print(L2,'\n')
 
-                    print('Line 1 and Line 2: ', Operations.intersection_check(L1,L2), '\n\n')
+                    print('Line 1 and Line 2: ', Operations.intersects(L1,L2), '\n\n')
                     if input('\n\nDo you want to check intersection of another line with line 1: ') != 'y':
                         print('\n\n')
                         break
