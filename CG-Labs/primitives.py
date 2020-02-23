@@ -82,6 +82,9 @@ class Pointt:
     def draw(self,window,color='black'):
         c = Point(self.xc,self.yc)
         c.draw(window)
+
+    def clone(self):
+        return Pointt(self.xc,self.yc)
         
 
 class LineSegment:
@@ -358,33 +361,32 @@ class Operations:
         test_a1 = Operations.turnTest(line1,line2.Point_A)
         if test_a1 == 'collinear':
             temp = Operations.isCollinear(line1,line2.Point_A)
-
-            if (temp == 'between' or temp == 'end_point') and Operations.turnTest(line1,line2.Point_B) == 'collinear':
+            if (temp == 'between' or temp == 'end_point'):
+                return 'intersection'
+            temp = Operations.isCollinear(line2,line1.Point_A)
+            print(temp)
+            if (temp == 'between' or temp == 'end_point'):
                 return 'intersection'
 
         test_b1 = Operations.turnTest(line1,line2.Point_B)
         if test_b1 == 'collinear':
             temp = Operations.isCollinear(line1,line2.Point_B)
-
-            if (temp == 'between' or temp == 'end_point') and Operations.turnTest(line1,line2.Point_A) == 'collinear':
+            if (temp == 'between' or temp == 'end_point'):
+                return 'intersection'
+            
+            temp = Operations.isCollinear(line2,line1.Point_B)
+            print(temp)
+            if (temp == 'between' or temp == 'end_point'):
                 return 'intersection'
 
 
-        flag = False
-
-        if test_a1 != 'collinear' and test_b1 != 'collinear' and test_a1 != test_b1:
-            flag = True
-            
-        if (Operations.isCollinear(line1,line2.Point_A) == 'between' or Operations.isCollinear(line1,line2.Point_B) == 'between') and test_a1 != test_b1:
-            flag = True
-        
-        if (Operations.isCollinear(line1,line2.Point_A) == 'end_point' or Operations.isCollinear(line1,line2.Point_B) == 'end_point') and test_a1 != test_b1:
-            flag = True
+        if test_a1 == test_b1:
+            return 'non_intersection' 
 
         test_a2 = Operations.turnTest(line1.reverse(),line2.Point_A)
         test_b2 = Operations.turnTest(line1.reverse(),line2.Point_B)
 
-        if flag and test_a2 != test_b2:
+        if test_a1 != test_a2 and test_b1 != test_b2:
             return 'intersection'
 
         return 'non_intersection'        
