@@ -212,9 +212,10 @@ class polygon:
         self.__curr_E_index = self.__curr_V_index
 
     # --------------------------
-    # if center_axis is 1, then center point is taken such the point has lowest y-axis value
-    #  other_wise it is taken along x-axis
-    # the polygon is thus sorted along the center_axis such that, vertex_table of polygon
+    # if center_axis is 1, then center point is calculated as mid point of extreme x-axis
+    # other_wise it is taken along y-axis
+    # but for sorting purpose y-axis is used when center_axis =1, and vice-versa
+    # The polygon is thus sorted along the center_axis such that, vertex_table of polygon
     # if printed sequentially will form a bounding box (edges from the vertex).
     def sortCCW(self,center_axis = 1):
         vl = []
@@ -222,41 +223,50 @@ class polygon:
             vl.append(p.getList())
 
         if True:
-            center = vl[0]
-            min_y = vl[0][1]
+            center = 0
+            ext_up = 0
+            ext_low = 0
             # find the lowest y-axis point to mark it as divider
             for x,y in vl:
-                if  min_y>y:
-                    min_y = y
-                    center = [x,y]
+                if  ext_low > y:
+                    ext_low = y if center_axis == 0 else x
+                if  ext_up < y:
+                    ext_up = y if center_axis == 0 else x
             
+            center = math.ceil((ext_up+ext_low)/2)
             print(center,"center")
             left = []
             right = []
-
             # separate vertices as left and right w.r.t the center point
             for x,y in vl:
-                if x < center[0]:
-                    left.append([x,y])
-                if x > center[0]:
-                    right.append([x,y])
+                if center_axis == 1:
+                    if x < center:
+                        left.append([x,y])
+                    if x >= center: #because we use ceiling function for center
+                        right.append([x,y])
 
+                else:
+                    if y < center:
+                        left.append([x,y])
+                    if y >= center: #because we use ceiling function for center
+                        right.append([x,y])
+
+            # print(left,right,"left-right--- before sorting")
             # sort left and right in ascending order
-            left = pointSort_linear(left,center_axis)
-            left.reverse()
+            left = pointSort_linear(left,center_axis)            
             right = pointSort_linear(right,center_axis)
+            print(left,right,"left-right--------\n")
+            right.reverse()
+                
+            print(left,right,"left-right--------after reverse\n")
             # keep it in a linear array
             temp = []
-            temp.append(point(center[0],center[1]))
-            for x,y in right:
-                temp.append(point(x,y))
             for x,y in left:
                 temp.append(point(x,y))
+            for x,y in right:
+                temp.append(point(x,y))
 
-            # self._vertex = temp
-            # self.length = len(self._vertex)
-            # print(self.__curr_E_index,self.__curr_V_index)
-            # print('updateEdgeTable',self.__curr_V_index)
+            self._vertex = temp
             self.__updateEdgeTable()
             return
         else:
@@ -378,10 +388,10 @@ class PLC_Types(Enum):
 
 def Three_Point_Area(a: point,b: point,c: point):   
     # calculating area of triangle formed by joining point c to end points of line ab.
-    # i.e. the reference point is 'c'.      
-    A = a._x*(b._y-c._y)
-    B = b._x*(c._y-a._y)
-    C = c._x*(a._y-b._y)
+    # i.e. the point in observation is point is 'c', and reference point is point 'b'.      
+    A = b._x*(a._y-c._y)
+    B = a._x*(c._y-b._y)
+    C = c._x*(b._y-a._y)
      
     area = (A+B+C)/2
     return area
@@ -487,23 +497,19 @@ def pointSort_linear(array,axis=0):
         if(point[axis]>max_ax[axis]):
             max_ax = point
 
-    center = max_ax[axis]/2
+    center = math.ceil(max_ax[axis]/2)
     left = []
     right = []
-    for point in array:
-        if point[axis]<=center:
-            left.append(point)
+    for p in array:
+        if p[axis] < center:
+            left.append(p)
         else:
-            right.append(point)
+            right.append(p)
 
     sorted_left = pointSort_linear(left,axis)
     sorted_right = pointSort_linear(right,axis)
 
-    # for point in sorted_right:
-    #     sorted_left.append(point)
-
-    return sorted_left + sorted_right
-
+    return sorted_left+sorted_right
 
 if __name__ == '__main__':
     print(__name__)
@@ -516,8 +522,8 @@ if __name__ == '__main__':
     vertex_table = [point(5,2),point(7,4),point(2,1),point(6,7),point(2,5),point(1,3)]
     plg = polygon()
     plg.initialize(vertex_table)
-    # print(plg)
-    plg.sortCCW()
     print(plg)
-    # print(Three_Point_Area(point(5,2),point(2,1),point(1,3)))
-    # print(vertex_table[-1])
+    plg.sortCCW(0)
+    print(plg)
+    # # print(Three_Point_Area(point(5,2),point(2,1),point(1,3)))
+    print(Line_Point_Area(line(point(5,2),point(7,4)),point(6,7)))
