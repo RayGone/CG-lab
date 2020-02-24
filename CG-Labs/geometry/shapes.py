@@ -1,4 +1,5 @@
 import math
+from enum import Enum
 
 class point:
     _x = 0
@@ -19,14 +20,14 @@ class point:
     def setY(self,y):
         self._y = int(y)
 
-    def setPoint(self,point):
-        if(type(point) == type(list()) or type(point) == type(tuple())):
-            self._x = point[0]
-            self._y = point[1]
+    def setPoint(self,pt):
+        if(type(pt) == type(list()) or type(pt) == type(tuple())):
+            self._x = pt[0]
+            self._y = pt[1]
         
-        if(type(point) == type({})):
-            self._x = point['x']
-            self._y = point['y']
+        if(type(pt) == type({})):
+            self._x = pt['x']
+            self._y = pt['y']
 
 
     # Getter Methods
@@ -44,8 +45,7 @@ class point:
     def __str__(self):
         return "({},{})".format(self._x,self._y)
 
-
-
+# --------------------------------
 class line:
     _start = point(0,0)
     _end = point(0,0)
@@ -60,23 +60,17 @@ class line:
     def setPointAB(self,start,end):
         self._start = start
         self._end = end
-
     def setXY(self,x1,y1,x2,y2):
         self.setStartXY(x1,y2)
         self.setEndXY(x2,y2)
-
     def setStartPoint(self,start):
         if(type(start) == type(point())):
             self._start = start
-
-
     def setEndPoint(self,end):
         if(type(end) == type(point())):
             self._end = end
-
     def setEndXY(self,x,y):
         self._end = point(x,y)
-
     def setStartXY(self,x,y):
         self._start = point(x,y)
 
@@ -94,21 +88,25 @@ class line:
     def getDict(self):
         return {"start":{"x":self._start._x,"y":self._start._y},"end":{"x":self._end._x,"y":self._end._y}}
     # others
+    def reverse(self):
+        return line(self._end,self._start)
+
     def __str__(self):
         return "[start{},end{}]".format(self._start,self._end)
 
 
-class PLG_Type(Enum): # Polygon Types
+class PLG_Types(Enum): # Polygon Types
     CONVEX = 0
     CONCAVE = 1
-    NON_POLYGON = -1
+    NON = -1
 
 class polygon:
     length = 0
     _edge = []
     _vertex = []
     isInitialized = False
-    _type = PLG_Type.CONCAVE 
+    _type = PLG_Types.NON
+    _isSimple = False
     __curr_E_index = 0
     __curr_V_index = 0
     edge_vertex_maps = []
@@ -141,28 +139,100 @@ class polygon:
         for edge in self._edge:
             self._vertex.append(edge._start)
         
-    def __initialize_with_vertex_list(self,vertex_list):
-        for point in vertex_list:
-            self._vertex.append(point)
+    def __initialize_with_vertex_list(self,vertex_list,edge_vertex_map=[]):
+        for pt in vertex_list:
+            self._vertex.append(pt)
 
         self.length = len(vertex_list)
-        self.__updateEdgeTable()
-        self.isInitialized = True
+        self.sortCCW()
+        if(self.isConvex()):
+            self.__updateEdgeTable()
+            self._isSimple = True
+            self.isInitialized = True
+            return
+        else:
+            if(len(edge_vertex_map)==0):
+                self.__updateEdgeTable()
+                self.isInitialized = True
+                # if polygon is not convex
+                # we have to determine if it is simple polygon or not
+
+                self.__init_index()
+                # first step to determine if it is simple polygon or not is to check for intersection
+                counter = 0
+                current = self._currentEdge()
+                self._nextEdge()
+                while(True):
+                    test = self._nextEdge()
+                    if(str(test) == str(current)):
+                        current = self._nextEdge() 
+                        self._nextEdge()
+                        test = self._nextEdge()
+                        # print(test,current)
+                        counter += 1
+                        if(counter == self.length):
+                            # survived all the tests
+                            self._isSimple = True
+                            break
+                    status = intersection(current,test)
+                    if(status == Intersect_Types.PROPER):
+                        self._isSimple = False
+                        print('this place vertex-list',status,current,test)
+                        break
+                # ------------------------
+                # second step is to check for holes
+                # ----
+                # ----
+                # return
+            else:
+                list_line = []
+                # print('arr')
+                for arr in edge_vertex_map:
+                    list_line.append(line(vertex_list[arr[0]-1],vertex_list[arr[1]-1]))
+                self.__initialize_with__edge(list_line)
 
     def __initialize_with__edge(self,edge: line):
         for l in edge:
-            self._vertex.append(l)
+            self._edge.append(l)
         self.__updateVertexTable()
+
+        if(self.isConvex()):
+            self._isSimple = True
+        else:             
+            # if polygon is not convex
+            # we have to determine if it is simple polygon or not
+            self.__init_index()
+            # first step to determine if it is simple polygon or not is to check for intersection
+            counter = 0
+            current = self._currentEdge()
+            self._nextEdge()
+            while(True):
+                test = self._nextEdge()
+                if(str(test) == str(current)):
+                    current = self._nextEdge() 
+                    self._nextEdge()
+                    test = self._nextEdge()
+                    # print(test,current)
+                    counter += 1
+                    if(counter == self.length):
+                        # survived all the tests
+                        self._isSimple = True
+                        break
+                status = intersection(current,test)
+                if(status == Intersect_Types.PROPER):
+                    print('this place')
+                    self._isSimple = False
+                    break
         self.isInitialized = True
 
-    def initialize(self,array,edge=False):
+    def initialize(self,array,edge=False,ve_map=[]):
         # if edge is true then array contains edge list, else vertex list
         self._vertex = []
         self._edge = []
         if(edge):
             self.__initialize_with__edge(array)
         else:
-            self.__initialize_with_vertex_list(array)
+            self.__initialize_with_vertex_list(array,ve_map)
         self.isInitialized = True
 
     def getVertex(self,i):
@@ -175,7 +245,7 @@ class polygon:
         el = []
         for l in self._edge:
             el.append(str(l))
-        return "This is a Polygon with points: {}".format(vl)+ "\nlines: {}".format(el)
+        return "{}\"points\": {}".format('{',vl)+ ",\"lines\": {}{}".format(el,'}')
     # ---------
     # doubly Linked list implementation
     # ---------
@@ -240,7 +310,7 @@ class polygon:
                     ext_up = y if center_axis == 0 else x
             
             center = math.ceil((ext_up+ext_low)/2)
-            print(center,"center")
+            # print(center,"center")
             left = []
             right = []
             # separate vertices as left and right w.r.t the center point
@@ -301,66 +371,123 @@ class polygon:
             # if the previous NON-COLLINEAR turn doesn't match with current NON-COLLINEAR turn.
             # then we can simply conclude that the polygon is not convexs
             if previous != status:                
-                self._type = PLG_Type.CONCAVE
+                self._type = PLG_Types.CONCAVE
                 return False
 
         # previous remains unchanged, then it implies that the given point is rather a line
         if previous == PLC_Types.COLLINEAR:
-            self._type = PLG_Type.NON_POLYGON
+            self._type = PLG_Types.NON
             return False
 
         # if the given set of points passes all the conditions then it is convex
-        self._type = PLG_Type.CONVEX
+        self._type = PLG_Types.CONVEX
 
         return True
 
+    # Transforms Simple Concave Polygon to Multiple sub-convex polygons
+    def SubConvexPolygonization(self):
+        if(self._isSimple and self._type==PLG_Types.CONCAVE):
+            self.__init_index()
+
+            self._sub_polygons = []
+            
+            pts = []
+            queue = self._edge.copy()
+
+            #reference turn for condition
+            ref_turn = PLC_Types.RIGHT
+            while(len(queue)!=0):
+                # print(cline,cpoint)
+                cline = queue.pop(0) # current line
+                cpoint = queue[0]._end # current point in turn test is the end of next line
+                turn = TurnTest(cline,cpoint)
+                
+                buffer = []
+                while(turn == PLC_Types.COLLINEAR):
+                    buffer.append(cline)                    
+                    cline = queue.pop(0)
+                    cpoint = queue[0]._end
+                    turn = TurnTest(cline,cpoint)
+
+                if(ref_turn != turn):
+                    # if turn doesn't match
+                    if(len(pts) == 0):
+                        # if there is no points in pts, then append the points in buffer back to queue
+                        # it is because we can't use those points to make a convex sub-polygon
+                        queue.extend(buffer)
+                        # if it is begining of next sub-polygon search
+                        while True:
+                            # untill ref_turn doesn't match, switch to next line and next point as current
+                            queue.insert(-1,cline)
+                            cline = queue.pop(0)
+                            cpoint = queue[0]._end
+                            turn = TurnTest(cline,cpoint)
+                            if(ref_turn == turn):
+                                # if turn matches break the loop
+                                break
+                    else:
+                        pts.extend(buffer)
+                        # if pts is not empty, then cut out the convex sub-polygon from available points in pts.
+                        pass
+                    
+                if(ref_turn == turn):
+                    pts.append(cline)
+
+            
+        else:
+            if(not self._isSimple):
+                raise Exception('Can not perform sub convex polygonization of non-simple polygon')
+            if(self._type==PLG_Types.CONVEX):
+                self._sub_polygons = [polygon().initialize(self._vertex)]
     # Point Inclusion Test
     def PIT(self,pt):
-        if self._type:
-            if type(point()) == type(pt):
-                prev_stat = TurnTest(self._edge[0],pt)
+        if self._isSimple:
+            if self._type == PLG_Types.CONVEX:
+                if type(point()) == type(pt):
+                    prev_stat = TurnTest(self._edge[0],pt)
 
-                if prev_stat == 'collinear':
-                    return False
-
-                for x in self._edge:
-                    stat = TurnTest(x,pt)
-                    if prev_stat != stat:
+                    if prev_stat == 'collinear':
                         return False
-                    
-                return True
-            
-            return False
+
+                    for x in self._edge:
+                        stat = TurnTest(x,pt)
+                        if prev_stat != stat:
+                            return False
+                        
+                    return True
+                
+                return False
+            else:
+                # works for all polygons
+                average_point = [0,0]
+                for p in self._vertex:
+                    average_point[0] += p._x
+                    average_point[1] += p._y
+
+                average_point = [average_point[0]/self.length,average_point[1]/self.length]
+
+                angle = []
+                for p in self._vertex:
+                    angle.append(math.atan2(p._x-average_point[0],p._y-average_point[1]),p)
+
+                angle = sorted(angle,key=lambda a:a[0])
+                
+
         else:
-            # works for all polygons
-            average_point = [0,0]
-            for point in self._vertex:
-                average_point[0] += p._x
-                average_point[1] += p._y
+            raise Exception('Point Inclusion Test Cannot Be Performed on a Non-Simple Polygon')
 
-            average_point = [average_point[0]/self.length,average_point[1]/self.length]
-
-            angle = []
-            for point in self._vertex:
-                angle.append(math.atan2(p._x-average_point[0],p._y-average_point[1]),point)
-
-            angle = sorted(angle,key=lambda a:a[0])
-            
-
-            raise Exception('Point Inclusion Test Cannot Be Performed on a Non-Convex Polygon')
-
-    def RayCasting(self,point):
+    def RayCasting(self,p):
         hx_point = self._vertex[0]
         lx_point = self._vertex[0]
 
         for x in self._vertex:
-            if x._x>hx_p._x:
+            if x._x>hx_point._x:
                 hx_point = x.clone()
             
-            if x._x<lx_p._x:
+            if x._x<hx_point._x:
                 lx_point = x.clone()
 
-        hx_p._x += 20
+        hx_point._x += 20
 
         l = line(point,hx_point)
         # print('check point: ', line)
@@ -388,7 +515,6 @@ class Reader:
 """
     Functions
 """
-from enum import Enum
 
 # Point Line Classification _ Types
 class PLC_Types(Enum):
@@ -399,6 +525,8 @@ class PLC_Types(Enum):
     BEHIND = 5
     BEYOND = 6
     BETWEEN = 7
+    START = 8
+    END = 9
     NON_COLLINEAR = 0
 
 def Three_Point_Area(a: point,b: point,c: point):   
@@ -413,6 +541,33 @@ def Three_Point_Area(a: point,b: point,c: point):
 
 def Line_Point_Area(l: line,p: point):
     return Three_Point_Area(l._start,l._end,p)
+
+
+# Point Line Classification
+def PLC(l: line,p: point):    
+    if (l._start._x == p._x and l._start._y == p._y): 
+        return PLC_Types.START
+
+    if (l._end._x == p._x and l._end._y == p._y):
+        return PLC_Types.END
+
+    area = Line_Point_Area(l,p)
+    
+    if area==0:
+        if l._start._x == l._end._x:#if line is orthogonal line
+            if l._start._y > p._y and l._end._y > p._y:
+                return PLC_Types.BEHIND
+            elif l._start._y < p._y and l._end._y < p._y:
+                return PLC_Types.BEYOND
+            else:
+                return PLC_Types.BETWEEN
+        else:#if line is not orthogonal
+            if l._start._x > p._x and l._end._x > p._x:
+                return PLC_Types.BEHIND
+            elif l._start._x < p._x and l._end._x < p._x:
+                return PLC_Types.BEYOND
+            else:
+                return PLC_Types.BETWEEN
 
 # here start point of line is observation point, end point of line is reference point
 # input point p is the point that is observed.
@@ -431,68 +586,71 @@ def TurnTest(l: line,p: point):
     else:
         return PLC_Types.COLLINEAR
 
-def isCollinear(line: line,point: point):
-    if type(line)!=type(line()):
-        return False
-    if type(point)!=type(point()):
-        return False
+# -------------------------------
+def isCollinear(l: line,p: point):
+    if type(l)!=type(line()):
+        return PLC_Types.NON_COLLINEAR
+    if type(p)!=type(point()):
+        return PLC_Types.NON_COLLINEAR
     
-    if (l._start._x == p._x and l._start._y == p._y) or (l._end._x == p._x and l._end._y == p._y):
-        return 'end_point'
-
-    area = Three_Point_Area(l._start,l._end,point)
-    
+    area = Line_Point_Area(l,p)    
     if area==0:
-        if l._start._x==l._end._x:#if line is orthogonal line
-            if l._start._y>p._y and l._end._y>p._y:
-                return 'behind'
-            elif l._start._y<p._y and l._end._y<p._y:
-                return 'beyond'
-            else:
-                return 'between'
-        else:#if line is not orthogonal
-            if l._start._x>p._x and l._end._x>p._x:
-                return 'behind'
-            elif l._start._x<p._x and l._end._x<p._x:
-                return 'beyond'
-            else:
-                return 'between'
-    else:
-        return False  
+        return PLC_Types.COLLINEAR
+        
+    return PLC_Types.NON_COLLINEAR 
 
+class Intersect_Types(Enum):
+    PROPER = 0
+    IMPROPER = 1
+    NON = -1
+    
+# ---------------------------------------
 def intersection(line1: line,line2: line):
     test_a1 = TurnTest(line1,line2._start)
-    if test_a1 == 'collinear':
-        temp = isCollinear(line1,line2._start)
-        if (temp == 'between' or temp == 'end_point'):
-            return True
-        temp = isCollinear(line2,line1._start)
-        print(temp)
-        if (temp == 'between' or temp == 'end_point'):
-            return True
+    # if collinear 
+    if test_a1 == PLC_Types.COLLINEAR:
+        temp = PLC(line1,line2._start)
+        if (temp == PLC_Types.BETWEEN):
+            return Intersect_Types.PROPER
+        # and end-point then intersection is improper
+        if (temp == PLC_Types.END or temp == PLC_Types.START):
+            return Intersect_Types.IMPROPER
+
+        temp = PLC(line2,line1._start)
+        if (temp == PLC_Types.BETWEEN):
+            return Intersect_Types.PROPER
+        if (temp == PLC_Types.END or temp == PLC_Types.START):
+            return Intersect_Types.IMPROPER
 
     test_b1 = TurnTest(line1,line2._end)
-    if test_b1 == 'collinear':
-        temp = isCollinear(line1,line2._end)
-        if (temp == 'between' or temp == 'end_point'):
-            return True
+    # if collinear 
+    if test_b1 == PLC_Types.COLLINEAR:
+        temp = PLC(line1,line2._end)
+        if (temp == PLC_Types.BETWEEN):
+            return Intersect_Types.PROPER
+        # and end-point then intersection is improper
+        if (temp == PLC_Types.END or temp == PLC_Types.START):
+            return Intersect_Types.IMPROPER
         
         temp = isCollinear(line2,line1._end)
-        print(temp)
-        if (temp == 'between' or temp == 'end_point'):
-            return True
+        # print(temp)
+        if (temp == PLC_Types.BETWEEN):
+            return Intersect_Types.PROPER
+        if (temp == PLC_Types.END or temp == PLC_Types.START):
+            return Intersect_Types.IMPROPER
 
-
+    # not collinear but same so no intersection
     if test_a1 == test_b1:
-        return False
+        return Intersect_Types.NON
 
-    test_a2 = TurnTest(line1.reverse(),line2._start)
-    test_b2 = TurnTest(line1.reverse(),line2._end)
+    test_a2 = TurnTest(line2,line1._start)
+    test_b2 = TurnTest(line2,line1._end)
 
+    # if the turn test doesn't match with change in reference point for observation then there is a proper intersection
     if test_a1 != test_a2 and test_b1 != test_b2:
-        return True
+        return Intersect_Types.PROPER
 
-    return False
+    return Intersect_Types.NON
 
 # for polygon; array = vertex_list
 def pointSort_linear(array,axis=0):
@@ -509,37 +667,52 @@ def pointSort_linear(array,axis=0):
             return [array[1],array[0]] #swaping
     
     max_ax = array[0]
-    for point in array:
-        if(point[axis]>max_ax[axis]):
-            max_ax = point
+    min_ax = array[0]
+    for pt in array:
+        if(pt[axis]>max_ax[axis]):
+            max_ax = pt
+        if(pt[axis]<min_ax[axis]):
+            min_ax = pt
 
-    center = math.ceil(max_ax[axis]/2)
+    center = math.ceil((max_ax[axis]+min_ax[axis])/2)
     left = []
     right = []
-    for p in array:
-        if p[axis] < center:
-            left.append(p)
+    for pt in array:
+        if pt[axis] < center:
+            left.append(pt)
         else:
-            right.append(p)
+            right.append(pt)
 
-    sorted_left = pointSort_linear(left,axis)
-    sorted_right = pointSort_linear(right,axis)
+    sorted_left = []
+    # print(right)
+    if len(left)>0:
+        sorted_left = pointSort_linear(left,axis)
+
+    sorted_right = []
+    if len(right)>0:
+        sorted_right = pointSort_linear(right,axis) 
 
     return sorted_left+sorted_right
 
 if __name__ == '__main__':
-    print(__name__)
-    print(point())
-    print(line())
-    print(PLC_Types.COLLINEAR)
-    print(type(list()))
-    print(type(line()))
+    # print(__name__)
+    # print(point())
+    # print(line())
+    # print(PLC_Types.COLLINEAR)
+    # print(type(list()))
+    # print(type(line()))
     
-    vertex_table = [point(5,2),point(7,4),point(2,1),point(6,7),point(2,5),point(1,3)]
+    vertex_table = [point(7,4),point(5,2),point(2,1),point(5,5),point(6,7),point(1,3),point(2,5)] # concave-simple
+    # vertex_table = [point(7,4),point(5,2),point(2,1),point(6,7),point(1,3),point(2,5)] # convex-simple
+    
+    # edge_vertex_mapping = [[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]]
     plg = polygon()
     plg.initialize(vertex_table)
     print(plg)
-    plg.sortCCW()
-    print(plg)
+    print(plg._isSimple,plg._type)
+    # print(plg.PIT(point(5,5)))
+    print(plg.SubConvexPolygonization())
+    # print(intersection(line(point(6,7),point(5,5)),line(point(5,2),point(2,1))))
+    # print(TurnTest(line(point(6,7),point(5,5)),point(5,2)))
     # # print(Three_Point_Area(point(5,2),point(2,1),point(1,3)))
-    print(Line_Point_Area(line(point(5,2),point(7,4)),point(6,7)))
+    # print(Line_Point_Area(line(point(5,2),point(7,4)),point(6,7)))
