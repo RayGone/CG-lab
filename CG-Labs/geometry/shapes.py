@@ -98,15 +98,21 @@ class line:
         return "[start{},end{}]".format(self._start,self._end)
 
 
+class PLG_Type(Enum): # Polygon Types
+    CONVEX = 0
+    CONCAVE = 1
+    NON_POLYGON = -1
+
 class polygon:
     length = 0
     _edge = []
     _vertex = []
     isInitialized = False
-    _isConvex = True 
+    _type = PLG_Type.CONCAVE 
     __curr_E_index = 0
     __curr_V_index = 0
     edge_vertex_maps = []
+    _direction = False
 
     def __init__(self):
         self._edge = []
@@ -255,10 +261,10 @@ class polygon:
             # sort left and right in ascending order
             left = pointSort_linear(left,center_axis)            
             right = pointSort_linear(right,center_axis)
-            print(left,right,"left-right--------\n")
+            # print(left,right,"left-right--------\n")
             right.reverse()
                 
-            print(left,right,"left-right--------after reverse\n")
+            # print(left,right,"left-right--------after reverse\n")
             # keep it in a linear array
             temp = []
             for x,y in left:
@@ -273,7 +279,7 @@ class polygon:
             pass
 
     def isConvex(self):
-        previous = 'collinear'
+        previous = PLC_Types.COLLINEAR
         for x in range(self.length):
             # first point to be checked in third in the list
             vertex = self._vertex[(x+2)%self.length]
@@ -281,28 +287,36 @@ class polygon:
 
             status = TurnTest(edge,vertex)
 
-            if previous == 'collinear':
-                previous = status
-                continue
-
-            if x==0:
+            # for the first point as we have pre-assumed previous to be COLLINEAR
+            if previous == PLC_Types.COLLINEAR:
                 previous = status
                 continue
             
-            if status =='collinear':
+            # if the next point is COLLINEAR then it is still convex so just move ahead
+            # and preserving the turn of previous to compare with next point because
+            # we won't be able to decide if a polygon is convex by comparing turn of next point with COLLINEAR turn
+            if status == PLC_Types.COLLINEAR:
                 continue
 
-            if previous != status:
+            # if the previous NON-COLLINEAR turn doesn't match with current NON-COLLINEAR turn.
+            # then we can simply conclude that the polygon is not convexs
+            if previous != status:                
+                self._type = PLG_Type.CONCAVE
                 return False
 
-        if previous == 'collinear':
+        # previous remains unchanged, then it implies that the given point is rather a line
+        if previous == PLC_Types.COLLINEAR:
+            self._type = PLG_Type.NON_POLYGON
             return False
+
+        # if the given set of points passes all the conditions then it is convex
+        self._type = PLG_Type.CONVEX
 
         return True
 
     # Point Inclusion Test
     def PIT(self,pt):
-        if self._isConvex:
+        if self._type:
             if type(point()) == type(pt):
                 prev_stat = TurnTest(self._edge[0],pt)
 
@@ -376,6 +390,7 @@ class Reader:
 """
 from enum import Enum
 
+# Point Line Classification _ Types
 class PLC_Types(Enum):
     # point line classification types
     COLLINEAR = 1
@@ -396,17 +411,18 @@ def Three_Point_Area(a: point,b: point,c: point):
     area = (A+B+C)/2
     return area
 
-# here p is reference point
 def Line_Point_Area(l: line,p: point):
     return Three_Point_Area(l._start,l._end,p)
 
-def TurnTest(line: line,point: point):
-    if type(line)!=type(line()):
-        raise ValueError('Objec of class line expected.')
-    if type(point)!=type(point()):
-        raise ValueError('Objec of class point expected.')
+# here start point of line is observation point, end point of line is reference point
+# input point p is the point that is observed.
+def TurnTest(l: line,p: point):
+    if type(l)!=type(line()):
+        raise ValueError('Object of class line expected.')
+    if type(p)!=type(point()):
+        raise ValueError('Object of class point expected.')
     
-    area = Three_Point_Area(l._start ,l._end ,point)
+    area = Line_Point_Area(l ,p)
 
     if area<0:
         return PLC_Types.LEFT
@@ -523,7 +539,7 @@ if __name__ == '__main__':
     plg = polygon()
     plg.initialize(vertex_table)
     print(plg)
-    plg.sortCCW(0)
+    plg.sortCCW()
     print(plg)
     # # print(Three_Point_Area(point(5,2),point(2,1),point(1,3)))
     print(Line_Point_Area(line(point(5,2),point(7,4)),point(6,7)))
