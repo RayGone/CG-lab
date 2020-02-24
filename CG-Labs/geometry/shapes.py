@@ -1,6 +1,41 @@
 import math
 from enum import Enum
 
+# Type Enumerations
+# ## --------------
+
+# Point Polygon Classification
+class PPC_Types(Enum):
+    INSIDE=0
+    BORDER=1
+    OUTSIDE=-1
+
+# Polygon Types
+class PLG_Types(Enum):
+    CONVEX = 0
+    CONCAVE = 1
+    NON = -1
+
+class Intersect_Types(Enum):
+    PROPER = 0
+    IMPROPER = 1
+    NON = -1
+   
+# Point Line Classification _ Types
+class PLC_Types(Enum):
+    # point line classification types
+    COLLINEAR = 1
+    LEFT = 2
+    RIGHT = 3
+    BEHIND = 5
+    BEYOND = 6
+    BETWEEN = 7
+    START = 8
+    END = 9
+    NON_COLLINEAR = 0
+
+
+# Geometries Classes
 class point:
     _x = 0
     _y = 0
@@ -94,12 +129,6 @@ class line:
     def __str__(self):
         return "[start{},end{}]".format(self._start,self._end)
 
-
-class PLG_Types(Enum): # Polygon Types
-    CONVEX = 0
-    CONCAVE = 1
-    NON = -1
-
 class polygon:
     length = 0
     _edge = []
@@ -111,6 +140,7 @@ class polygon:
     __curr_V_index = 0
     edge_vertex_maps = []
     _direction = False
+    _ref_turn = PLC_Types.RIGHT # clockwise ordering of vertex and edge
 
     def __init__(self):
         self._edge = []
@@ -142,7 +172,6 @@ class polygon:
     def __initialize_with_vertex_list(self,vertex_list,edge_vertex_map=[]):
         for pt in vertex_list:
             self._vertex.append(pt)
-
         self.length = len(vertex_list)
         self.sortCCW()
         if(self.isConvex()):
@@ -177,12 +206,14 @@ class polygon:
                     status = intersection(current,test)
                     if(status == Intersect_Types.PROPER):
                         self._isSimple = False
-                        print('this place vertex-list',status,current,test)
                         break
                 # ------------------------
                 # second step is to check for holes
                 # ----
+                ### don't know how to do that
                 # ----
+                if(self._isSimple):
+                    self.SubConvexPolygonization()
                 # return
             else:
                 list_line = []
@@ -220,7 +251,7 @@ class polygon:
                         break
                 status = intersection(current,test)
                 if(status == Intersect_Types.PROPER):
-                    print('this place')
+                    # print('this place')
                     self._isSimple = False
                     break
         self.isInitialized = True
@@ -232,6 +263,7 @@ class polygon:
         if(edge):
             self.__initialize_with__edge(array)
         else:
+            # print('initializing with vertex')
             self.__initialize_with_vertex_list(array,ve_map)
         self.isInitialized = True
 
@@ -388,89 +420,135 @@ class polygon:
     def SubConvexPolygonization(self):
         if(self._isSimple and self._type==PLG_Types.CONCAVE):
             self.__init_index()
-
             self._sub_polygons = []
             
             pts = []
             queue = self._edge.copy()
-
             #reference turn for condition
-            ref_turn = PLC_Types.RIGHT
             while(len(queue)!=0):
-                # print(cline,cpoint)
                 cline = queue.pop(0) # current line
-                cpoint = queue[0]._end # current point in turn test is the end of next line
+                cpoint = None
+                if(len(queue)==0):
+                    cpoint = pts[0]._end
+                else:
+                    cpoint = queue[0]._end # current point; in turn test it is the end of next line
+                
                 turn = TurnTest(cline,cpoint)
                 
+                # print(cline,cpoint,self._ref_turn,turn)
                 buffer = []
+                # if turn is collinear, move to next untill turn other than collinear is found
                 while(turn == PLC_Types.COLLINEAR):
                     buffer.append(cline)                    
                     cline = queue.pop(0)
                     cpoint = queue[0]._end
                     turn = TurnTest(cline,cpoint)
 
-                if(ref_turn != turn):
+                if(self._ref_turn != turn):
                     # if turn doesn't match
                     if(len(pts) == 0):
                         # if there is no points in pts, then append the points in buffer back to queue
-                        # it is because we can't use those points to make a convex sub-polygon
-                        queue.extend(buffer)
+                        # it is because we can't use those points to make a convex sub-polygon                        
+                        if len(buffer)>0:
+                            queue.extend(buffer)
                         # if it is begining of next sub-polygon search
                         while True:
-                            # untill ref_turn doesn't match, switch to next line and next point as current
+                            # untill self._ref_turn doesn't match, switch to next line and next point as current
                             queue.insert(-1,cline)
                             cline = queue.pop(0)
                             cpoint = queue[0]._end
                             turn = TurnTest(cline,cpoint)
-                            if(ref_turn == turn):
+                            if(self._ref_turn == turn):
                                 # if turn matches break the loop
                                 break
                     else:
-                        pts.extend(buffer)
-                        # if pts is not empty, then cut out the convex sub-polygon from available points in pts.
-                        pass
+                        # if there are edges in buffer , which were collinear, 
+                        if len(buffer)>0:
+                            pts.extend(buffer)
+
+                        # Now we take turnTest of cline with starting point of each line in pts sequentially
+                        ## We take turnTest untill turn is not equal to self._ref_turn
+                        ## and break out of while loop when we find turn equal to self._ref_turn
+                        while TurnTest(cline,pts[0]._start) != self._ref_turn:
+                            ### if turnTest is not equal to self._ref_turn
+                            ### pop the line out of pts and push it to queue
+                            queue.append(pts.pop(0))
+                            
+                            #### if pts becomes empty break out of the loop
+                            if len(pts) == 0:
+                                break
+
+                        # if pts is empty continue to start again  
+                        if len(pts) == 0:
+                            continue
+                        # else:                        
+                        # if pts is not empty, then cut out the convex sub-polygon from available line in pts.
+                        new_line = line(cline._end,pts[0]._start) # make new line by joining point end of current line and start point of first line in pts
+                        # print(new_line)
+                        queue.append(new_line.reverse()) # append new_line to the queue
+                        pts.extend([cline,new_line]) # add the lines to pts
+                        temp_points = []
+                        for ln in pts:
+                            temp_points.append(ln._start)
+
+                        tmp_plg = polygon()
+                        tmp_plg.initialize(temp_points)
+                        self._sub_polygons.append(tmp_plg) # make a polygon and add it to sub_polygons
+                        # print(self._sub_polygons[-1],'sub-polygon')
+                        pts = [] # re-initializing
+                        # pass
                     
-                if(ref_turn == turn):
+                if(self._ref_turn == turn):
+                    if len(buffer)>0:
+                        pts.extend(buffer)
                     pts.append(cline)
 
+                    if(len(queue) == 0):
+                        temp_points = []
+                        for ln in pts:
+                            temp_points.append(ln._start)
+                            
+                        tmp_plg = polygon()
+                        tmp_plg.initialize(temp_points)
+                        self._sub_polygons.append(tmp_plg) # make a polygon and add it to sub_polygons
+                        
+            # print(len(self._sub_polygons),"number of sub polygons")
             
         else:
             if(not self._isSimple):
                 raise Exception('Can not perform sub convex polygonization of non-simple polygon')
             if(self._type==PLG_Types.CONVEX):
                 self._sub_polygons = [polygon().initialize(self._vertex)]
+    # ----------------------------------------------
+
     # Point Inclusion Test
     def PIT(self,pt):
         if self._isSimple:
             if self._type == PLG_Types.CONVEX:
                 if type(point()) == type(pt):
-                    prev_stat = TurnTest(self._edge[0],pt)
-
-                    if prev_stat == 'collinear':
-                        return False
-
                     for x in self._edge:
-                        stat = TurnTest(x,pt)
-                        if prev_stat != stat:
-                            return False
+                        turn = TurnTest(x,pt)
+                        print('turn',turn,x,pt)
+                        if turn == PLC_Types.COLLINEAR:
+                            return PPC_Types.BORDER
+                        elif turn != self._ref_turn:
+                            return PPC_Types.OUTSIDE
                         
-                    return True
+                    return PPC_Types.INSIDE
                 
-                return False
+                # here better raise an exception
+                return PPC_Types.OUTSIDE
             else:
                 # works for all polygons
-                average_point = [0,0]
-                for p in self._vertex:
-                    average_point[0] += p._x
-                    average_point[1] += p._y
+                for sub_plg in self._sub_polygons:
+                    print(sub_plg)
+                    ppc = sub_plg.PIT(pt)
+                    print(ppc)
+                    if ppc != PPC_Types.OUTSIDE:
+                        return ppc
 
-                average_point = [average_point[0]/self.length,average_point[1]/self.length]
-
-                angle = []
-                for p in self._vertex:
-                    angle.append(math.atan2(p._x-average_point[0],p._y-average_point[1]),p)
-
-                angle = sorted(angle,key=lambda a:a[0])
+                # since conditions didn't meet
+                return PPC_Types.OUTSIDE
                 
 
         else:
@@ -498,7 +576,7 @@ class polygon:
             if stat == 'intersection':
                 counter+=1
 
-        print('number of intersections: ',counter)
+        # print('number of intersections: ',counter)
         if counter == 0:
             return False
 
@@ -515,19 +593,6 @@ class Reader:
 """
     Functions
 """
-
-# Point Line Classification _ Types
-class PLC_Types(Enum):
-    # point line classification types
-    COLLINEAR = 1
-    LEFT = 2
-    RIGHT = 3
-    BEHIND = 5
-    BEYOND = 6
-    BETWEEN = 7
-    START = 8
-    END = 9
-    NON_COLLINEAR = 0
 
 def Three_Point_Area(a: point,b: point,c: point):   
     # calculating area of triangle formed by joining point c to end points of line ab.
@@ -598,12 +663,7 @@ def isCollinear(l: line,p: point):
         return PLC_Types.COLLINEAR
         
     return PLC_Types.NON_COLLINEAR 
-
-class Intersect_Types(Enum):
-    PROPER = 0
-    IMPROPER = 1
-    NON = -1
-    
+ 
 # ---------------------------------------
 def intersection(line1: line,line2: line):
     test_a1 = TurnTest(line1,line2._start)
@@ -702,7 +762,7 @@ if __name__ == '__main__':
     # print(type(list()))
     # print(type(line()))
     
-    vertex_table = [point(7,4),point(5,2),point(2,1),point(5,5),point(6,7),point(1,3),point(2,5)] # concave-simple
+    vertex_table = [point(7,4),point(5,1),point(2,1),point(5,5),point(6,7),point(1,3),point(2,5)] # concave-simple
     # vertex_table = [point(7,4),point(5,2),point(2,1),point(6,7),point(1,3),point(2,5)] # convex-simple
     
     # edge_vertex_mapping = [[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]]
@@ -710,8 +770,8 @@ if __name__ == '__main__':
     plg.initialize(vertex_table)
     print(plg)
     print(plg._isSimple,plg._type)
-    # print(plg.PIT(point(5,5)))
-    print(plg.SubConvexPolygonization())
+    print(plg.PIT(point(3,1)))
+    # print(plg.SubConvexPolygonization())
     # print(intersection(line(point(6,7),point(5,5)),line(point(5,2),point(2,1))))
     # print(TurnTest(line(point(6,7),point(5,5)),point(5,2)))
     # # print(Three_Point_Area(point(5,2),point(2,1),point(1,3)))
