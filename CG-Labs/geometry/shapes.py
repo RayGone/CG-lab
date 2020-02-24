@@ -528,7 +528,7 @@ class polygon:
                 if type(point()) == type(pt):
                     for x in self._edge:
                         turn = TurnTest(x,pt)
-                        print('turn',turn,x,pt)
+                        # print('turn',turn,x,pt)
                         if turn == PLC_Types.COLLINEAR:
                             return PPC_Types.BORDER
                         elif turn != self._ref_turn:
@@ -541,9 +541,9 @@ class polygon:
             else:
                 # works for all polygons
                 for sub_plg in self._sub_polygons:
-                    print(sub_plg)
+                    # print(sub_plg)
                     ppc = sub_plg.PIT(pt)
-                    print(ppc)
+                    # print(ppc)
                     if ppc != PPC_Types.OUTSIDE:
                         return ppc
 
@@ -555,35 +555,53 @@ class polygon:
             raise Exception('Point Inclusion Test Cannot Be Performed on a Non-Simple Polygon')
 
     def RayCasting(self,p):
-        hx_point = self._vertex[0]
-        lx_point = self._vertex[0]
+        hx = self._vertex[0]._x
+        lx = self._vertex[0]._x
 
         for x in self._vertex:
-            if x._x>hx_point._x:
-                hx_point = x.clone()
-            
-            if x._x<hx_point._x:
-                lx_point = x.clone()
+            if x._x>hx:
+                hx = x._x     
 
-        hx_point._x += 20
+        hx+=5
+        lx = 0
 
-        l = line(point,hx_point)
+        l1 = line(point(lx,p._y),p)
+        l2 = line(p,point(hx,p._y))
         # print('check point: ', line)
         # print(line)
-        counter = 0
+        counter1 = 0
+        counter2 = 0
+        l1stat = None
+        l2stat = None
+        prev1 = False # to check for subsequent improper
+        prev2 = False # to check for subsequent improper
         for x in self._edge:
-            stat = intersection(l,x)
-            if stat == 'intersection':
-                counter+=1
-
-        # print('number of intersections: ',counter)
-        if counter == 0:
-            return False
-
-        if counter%2 == 0:
-            return True
+            l1stat = intersection(l1,x)
+            if l1stat == Intersect_Types.PROPER:
+                counter1+=1
+            if l1stat == Intersect_Types.IMPROPER:
+                if not prev1:
+                    prev1 = True
+                else:
+                    prev1 = False
+                    counter1+=1
         
-        return False
+            l2stat = intersection(x,l2)
+            if l2stat == Intersect_Types.PROPER:
+                counter2+=1
+            if l2stat == Intersect_Types.IMPROPER:
+                if not prev2:
+                    prev2 = True
+                else:
+                    prev2 = False
+                    counter2+=1
+            
+        if (counter1 == 1 and counter2 > 1) or (counter1 > 1 and counter2==1) or (counter1==1 and counter2==1):
+            return PPC_Types.INSIDE
+
+        if counter1==0 or counter2==0:
+            return PPC_Types.OUTSIDE
+        
 
 
 class Reader:
@@ -670,41 +688,48 @@ def intersection(line1: line,line2: line):
     # if collinear 
     if test_a1 == PLC_Types.COLLINEAR:
         temp = PLC(line1,line2._start)
-        if (temp == PLC_Types.BETWEEN):
-            return Intersect_Types.PROPER
-        # and end-point then intersection is improper
-        if (temp == PLC_Types.END or temp == PLC_Types.START):
+        if (temp == PLC_Types.BETWEEN or temp == PLC_Types.END or temp == PLC_Types.START):
             return Intersect_Types.IMPROPER
 
         temp = PLC(line2,line1._start)
-        if (temp == PLC_Types.BETWEEN):
-            return Intersect_Types.PROPER
-        if (temp == PLC_Types.END or temp == PLC_Types.START):
+        if (temp == PLC_Types.BETWEEN or temp == PLC_Types.END or temp == PLC_Types.START):
             return Intersect_Types.IMPROPER
 
     test_b1 = TurnTest(line1,line2._end)
     # if collinear 
     if test_b1 == PLC_Types.COLLINEAR:
         temp = PLC(line1,line2._end)
-        if (temp == PLC_Types.BETWEEN):
-            return Intersect_Types.PROPER
-        # and end-point then intersection is improper
-        if (temp == PLC_Types.END or temp == PLC_Types.START):
+        if (temp == PLC_Types.BETWEEN or temp == PLC_Types.END or temp == PLC_Types.START):
             return Intersect_Types.IMPROPER
         
         temp = isCollinear(line2,line1._end)
         # print(temp)
-        if (temp == PLC_Types.BETWEEN):
-            return Intersect_Types.PROPER
-        if (temp == PLC_Types.END or temp == PLC_Types.START):
+        if (temp == PLC_Types.BETWEEN or temp == PLC_Types.END or temp == PLC_Types.START):
             return Intersect_Types.IMPROPER
 
     # not collinear but same so no intersection
     if test_a1 == test_b1:
         return Intersect_Types.NON
 
-    test_a2 = TurnTest(line2,line1._start)
+    test_a2 = TurnTest(line2,line1._start)    
+    if test_a2 == PLC_Types.COLLINEAR:
+        temp = PLC(line2,line1._start)
+        if (temp == PLC_Types.BETWEEN or temp == PLC_Types.END or temp == PLC_Types.START):
+            return Intersect_Types.IMPROPER
+
+        temp = PLC(line2,line1._start)
+        if (temp == PLC_Types.BETWEEN or temp == PLC_Types.END or temp == PLC_Types.START):
+            return Intersect_Types.IMPROPER
+
     test_b2 = TurnTest(line2,line1._end)
+    if test_b2 == PLC_Types.COLLINEAR:
+        temp = PLC(line2,line1._end)
+        if (temp == PLC_Types.BETWEEN or temp == PLC_Types.END or temp == PLC_Types.START):
+            return Intersect_Types.IMPROPER
+
+        temp = PLC(line2,line1._end)
+        if (temp == PLC_Types.BETWEEN or temp == PLC_Types.END or temp == PLC_Types.START):
+            return Intersect_Types.IMPROPER
 
     # if the turn test doesn't match with change in reference point for observation then there is a proper intersection
     if test_a1 != test_a2 and test_b1 != test_b2:
@@ -771,6 +796,7 @@ if __name__ == '__main__':
     print(plg)
     print(plg._isSimple,plg._type)
     print(plg.PIT(point(3,1)))
+    print(plg.RayCasting(point(3,4)))
     # print(plg.SubConvexPolygonization())
     # print(intersection(line(point(6,7),point(5,5)),line(point(5,2),point(2,1))))
     # print(TurnTest(line(point(6,7),point(5,5)),point(5,2)))
