@@ -750,16 +750,22 @@ def pointSort_linear(array,axis=0):
             return array
         else:
             return [array[1],array[0]] #swaping
-    
+    # print(len(array),array)
     max_ax = array[0]
     min_ax = array[0]
     for pt in array:
-        if(pt[axis]>max_ax[axis]):
+        if(pt[axis]>=max_ax[axis]):
             max_ax = pt
         if(pt[axis]<min_ax[axis]):
             min_ax = pt
 
+    # if all the points have same axis-co-ordinate, then return array
+    if(max_ax[axis] == min_ax[axis]):
+        return array
+
     center = math.ceil((max_ax[axis]+min_ax[axis])/2)
+
+    # print(max_ax,min_ax,center)
     left = []
     right = []
     for pt in array:
