@@ -148,7 +148,7 @@ class polygon:
 
     def updateEdgeTable(self):
         self.__updateEdgeTable()
-        
+
     def __updateEdgeTable(self):
         self.__init_index()
         self._edge = [] # re-initialize
@@ -172,8 +172,14 @@ class polygon:
             self._vertex.append(edge._start)
 
     def __initialize_with_vertex_list(self,vertex_list,edge_vertex_map=[]):
-        for pt in vertex_list:
-            self._vertex.append(pt)
+        if type(vertex_list[0]) == type(point()):
+            for pt in vertex_list:
+                self._vertex.append(pt)
+        
+        elif type(vertex_list[0]) == type([]):
+            for pt in vertex_list:
+                self._vertex.append(point(pt[0],pt[1]))
+            
 
         self._vertex = removeDuplicateVertex(self._vertex)
 
@@ -805,9 +811,9 @@ if __name__ == '__main__':
     # print(type(list()))
     # print(type(line()))
     
-    vertex_table = [point(7,4),point(5,1),point(2,1),point(5,5),point(6,7),point(1,3),point(2,5)] # concave-simple
+    # vertex_table = [point(7,4),point(5,1),point(2,1),point(5,5),point(6,7),point(1,3),point(2,5)] # concave-simple
     # vertex_table = [point(7,4),point(5,2),point(2,1),point(6,7),point(1,3),point(2,5)] # convex-simple
-    
+    vertex_table = [[164, 2], [121, 5], [27, 21], [17, 26], [0, 43], [0, 188], [25, 194], [35, 196], [111, 200], [437, 200], [498, 198], [498, 42], [498, 16], [224, 1], [489, 1], [314, 0]]
     # edge_vertex_mapping = [[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]]
     plg = polygon()
     plg.initialize(vertex_table)
