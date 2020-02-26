@@ -183,7 +183,7 @@ class ConvexHull:
 
         self.giftwrap_algorithm(list_array)
 
-        self.__ConvexHull.initialize(self.__hull_pts)
+        self.__ConvexHull.initialize(self.__hull_pts,sort=False)
 
         tmp = []
         for pt in self.__hull_pts:
@@ -300,9 +300,9 @@ def draw_line(pt_list):
 if __name__ == "__main__":
     ch = ConvexHull([[0, 32], [0, 7], [1, 34], [2, 16], [2, 43], [3, 26], [4, 17], [5, 3], [7, 48], [8, 33], [9, 28], [9, 24], [11, 44], [12, 39], [14, 12], [19, 4], [20, 19], [21, 42], [21, 46], [21, 16], [22, 25], [23, 12], [25, 2], [25, 47], [26, 16], [27, 10], [27, 31], [29, 2], [30, 32], [32, 25], [32, 6], [33, 12], [34, 22], [35, 6], [35, 19], [35, 13], [36, 27], [36, 9], [37, 1], [37, 7], [40, 2], [42, 34], [42, 12], [42, 41], [43, 39], [43, 29], [45, 1], [45, 15], [46, 15], [46, 12], [48, 30], [48, 31], [49, 24], [50, 41], [50, 50]])
     # draw_multiple_points(ch.getPointSpace())
-    ch.generateRandomPoints(300,500,200)
+    ch.generateRandomPoints(150,500,400)
     # draw_multiple_points(ch.getPointSpace())
     ch.ConvexHull()
-    # ch.DrawExtremeEdgesWithPointSpace()
     ch.DrawExtremePointsWithPointSpace()
+    # ch.DrawExtremeEdgesWithPointSpace()
     ch.Draw()

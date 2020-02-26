@@ -171,22 +171,28 @@ class polygon:
         for edge in self._edge:
             self._vertex.append(edge._start)
 
-    def __initialize_with_vertex_list(self,vertex_list,edge_vertex_map=[]):
+    def __initialize_with_vertex_list(self,vertex_list,edge_vertex_map=[],sort=True):
         if type(vertex_list[0]) == type(point()):
             for pt in vertex_list:
                 self._vertex.append(pt)
-        
+            
+            self._vertex = removeDuplicateVertex(self._vertex)
+
         elif type(vertex_list[0]) == type([]):
             for pt in vertex_list:
                 self._vertex.append(point(pt[0],pt[1]))
             
+            self._vertex = removeDuplicateVertex(self._vertex)
+        else:
+            pass  
 
-        self._vertex = removeDuplicateVertex(self._vertex)
 
         self.length = len(self._vertex)
-        self.sortCCW()
+        if sort:
+            self.sortCCW()
+          
+        self.__updateEdgeTable()  
         if(self.isConvex()):
-            self.__updateEdgeTable()
             self._isSimple = True
             self.isInitialized = True
             self._type = PLG_Types.CONVEX
@@ -269,7 +275,7 @@ class polygon:
                     break
         self.isInitialized = True
 
-    def initialize(self,array,edge=False,ve_map=[]):
+    def initialize(self,array,edge=False,ve_map=[],sort = True):
         # if edge is true then array contains edge list, else vertex list
         self._vertex = []
         self._edge = []
@@ -277,7 +283,7 @@ class polygon:
             self.__initialize_with__edge(array)
         else:
             # print('initializing with vertex')
-            self.__initialize_with_vertex_list(array,ve_map)
+            self.__initialize_with_vertex_list(array,ve_map,sort)
         self.isInitialized = True
 
     def getVertex(self,i):
@@ -378,7 +384,7 @@ class polygon:
             right = pointSort_linear(right,center_axis)
             # print(left,right,"left-right--------\n")
             right.reverse()
-                
+
             # print(left,right,"left-right--------after reverse\n")
             # keep it in a linear array
             temp = []
