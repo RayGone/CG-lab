@@ -146,6 +146,9 @@ class polygon:
         self._edge = []
         self._vertex = []
 
+    def updateEdgeTable(self):
+        self.__updateEdgeTable()
+        
     def __updateEdgeTable(self):
         self.__init_index()
         self._edge = [] # re-initialize
@@ -162,24 +165,28 @@ class polygon:
             # print(counter,self.__curr_V_index)
             counter += 1
         
-
     def __updateVertexTable(self):
         self._vertex = [] # re-initialize
         # update _vertex using _edge
         for edge in self._edge:
             self._vertex.append(edge._start)
-        
+
     def __initialize_with_vertex_list(self,vertex_list,edge_vertex_map=[]):
         for pt in vertex_list:
             self._vertex.append(pt)
-        self.length = len(vertex_list)
+
+        self._vertex = removeDuplicateVertex(self._vertex)
+
+        self.length = len(self._vertex)
         self.sortCCW()
         if(self.isConvex()):
             self.__updateEdgeTable()
             self._isSimple = True
             self.isInitialized = True
+            self._type = PLG_Types.CONVEX
             return
         else:
+            self._type = PLG_Types.CONCAVE
             if(len(edge_vertex_map)==0):
                 self.__updateEdgeTable()
                 self.isInitialized = True
@@ -277,7 +284,7 @@ class polygon:
         el = []
         for l in self._edge:
             el.append(str(l))
-        return "{}\"points\": {}".format('{',vl)+ ",\"lines\": {}{}".format(el,'}')
+        return "{}\"points\": {}".format('{',vl)+ ",\n\"lines\": {}{}".format(el,'}')
     # ---------
     # doubly Linked list implementation
     # ---------
@@ -602,8 +609,6 @@ class polygon:
         if counter1==0 or counter2==0:
             return PPC_Types.OUTSIDE
         
-
-
 class Reader:
     pass
 
@@ -784,6 +789,13 @@ def pointSort_linear(array,axis=0):
         sorted_right = pointSort_linear(right,axis) 
 
     return sorted_left+sorted_right
+
+def removeDuplicateVertex(item_list):
+    t_list = {}
+    for pt in item_list:
+        t_list[str(pt)] = pt
+    
+    return list(t_list.values())
 
 if __name__ == '__main__':
     # print(__name__)
