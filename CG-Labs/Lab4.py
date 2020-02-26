@@ -284,7 +284,7 @@ def draw_line(pt_list):
                 y_number_list.append(pt.getY())
 
     # Plot the number in the list and set the line thickness.
-    plt.plot(x_number_list, y_number_list, linewidth=3)
+    plt.plot(x_number_list, y_number_list, linewidth=3,color='green')
 
     # Set chart title.
     plt.title("Point Space")
