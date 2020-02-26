@@ -1,15 +1,16 @@
 from geometry.shapes import *
-import random
+import matplotlib.pyplot as plt,random
 
 class ConvexHull:
-    __pointList = []
+    __point_space = []
+    __hull_pts = []
     __ConvexHull = polygon()
     __point_count = 0
 
     def __init__(self,plist = []):
         if(len(plist)):
             if(type(plist[0]) == type(point)):
-                self.__pointList = plist
+                self.__point_space = plist
             else:
                 for p in plist:
                     self.addPoint(point(p[0],p[1]))
@@ -18,10 +19,10 @@ class ConvexHull:
         return str(self.__ConvexHull)
 
     def getPointSpace(self):
-        return self.__pointList
+        return self.__point_space
 
     def addPoint(self,p: point):
-        self.__pointList.append(p)
+        self.__point_space.append(p)
 
     def giftwrap_algorithm(self,point_list):
         # sorting to get extreme x-axis point
@@ -165,21 +166,57 @@ class ConvexHull:
         # for hp in complete_hull:
         #     print(hp)
         # hull = []
-        draw_line(complete_hull)
 
+        self.__hull_pts = complete_hull
         # self.__ConvexHull.initialize(complete_hull)
         return
         # ref_turn = PLC_Types.RIGHT # extreme_points are at right turn of right part of the point space from the bisector line
         # right_hull = [en_pt]  # start from end point  of bisector_line for right hull        
 
+    def printConvexHull(self):
+        print(self.__ConvexHull)
+
     def ConvexHull(self):
         list_array = []
-        for p in self.__pointList:
+        for p in self.__point_space:
             list_array.append(p.getList())
 
         self.giftwrap_algorithm(list_array)
+
+        self.__ConvexHull.initialize(self.__hull_pts)
+
+        tmp = []
+        for pt in self.__hull_pts:
+            tmp.append(pt.getList())
+
+        self.__hull_pts = tmp
         return
-        
+
+    def DrawExtremePointsWithPointSpace(self):        
+        # self.printConvexHull()
+        print(self.__ConvexHull._type,'type')
+        draw_multiple_points(self.__point_space)
+       
+        draw_multiple_points(self.__hull_pts,p_size=45)
+        plt.show()
+
+    def DrawExtremeEdgesWithPointSpace(self):
+        print(self.__ConvexHull._type,'type')
+        draw_multiple_points(self.__point_space)
+        # hull_pts = self.__ConvexHull._vertex    
+        # hull_pts.append(hull_pts[0])
+        draw_line(self.__hull_pts)
+        plt.show()
+
+    def Draw(self):
+        self.printConvexHull()
+        draw_multiple_points(self.__point_space)
+      
+        draw_multiple_points(self.__hull_pts,p_size=65)
+        draw_line(self.__hull_pts)
+        plt.show()
+        pass
+
     # num_pt = number of points to generate
     # x_range = max x-value to generate and similarly for y_range
     # naxis = negative axis, range of negative is according to x_range and y_range
@@ -188,29 +225,18 @@ class ConvexHull:
         if (7*permutation/10)<num_pt:
             raise ValueError('x_range={} and y_range={} is small to generate {} points'.format(x_range,y_range,num_pt))
         
-        self.__pointList = []
+        self.__point_space = []
         while num_pt!=0:
             x = random.randint(0,x_range)
             y = random.randint(0,y_range)
             p = point(x,y)
-            if checkDuplicate(self.__pointList,p):
-                # if the geerated point is already in list
-                continue
 
-            self.__pointList.append(p)
+            self.__point_space.append(p)
             num_pt -= 1
         pass
     
 
-import matplotlib.pyplot as plt
-def checkDuplicate(plist,p):
-    for pt in plist:
-        if(str(pt) == str(p)):
-            return True
-
-    return False 
-    
-def draw_multiple_points(pt_list):
+def draw_multiple_points(pt_list,p_size = 20):
     # x axis value list.
     x_number_list = []
 
@@ -229,7 +255,7 @@ def draw_multiple_points(pt_list):
                 y_number_list.append(pt.getY())
 
     # Draw point based on above x, y axis values.
-    plt.scatter(x_number_list, y_number_list, s=35)
+    plt.scatter(x_number_list, y_number_list, s=p_size)
 
     # Set chart title.
     plt.title("Point Space")
@@ -274,7 +300,9 @@ def draw_line(pt_list):
 if __name__ == "__main__":
     ch = ConvexHull([[0, 32], [0, 7], [1, 34], [2, 16], [2, 43], [3, 26], [4, 17], [5, 3], [7, 48], [8, 33], [9, 28], [9, 24], [11, 44], [12, 39], [14, 12], [19, 4], [20, 19], [21, 42], [21, 46], [21, 16], [22, 25], [23, 12], [25, 2], [25, 47], [26, 16], [27, 10], [27, 31], [29, 2], [30, 32], [32, 25], [32, 6], [33, 12], [34, 22], [35, 6], [35, 19], [35, 13], [36, 27], [36, 9], [37, 1], [37, 7], [40, 2], [42, 34], [42, 12], [42, 41], [43, 39], [43, 29], [45, 1], [45, 15], [46, 15], [46, 12], [48, 30], [48, 31], [49, 24], [50, 41], [50, 50]])
     # draw_multiple_points(ch.getPointSpace())
-    ch.generateRandomPoints(100,500,200)
-    draw_multiple_points(ch.getPointSpace())
+    ch.generateRandomPoints(300,500,200)
+    # draw_multiple_points(ch.getPointSpace())
     ch.ConvexHull()
-    plt.show()
+    # ch.DrawExtremeEdgesWithPointSpace()
+    ch.DrawExtremePointsWithPointSpace()
+    ch.Draw()
