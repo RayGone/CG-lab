@@ -91,7 +91,7 @@ class ConvexHull:
                             index = 1
                             t_ln = line(st_pt,t_pt)
                     else: # PLC_Types.RIGHT
-                        
+
                         pass
 
                 left_hull.append(t_ln._end)
@@ -185,7 +185,7 @@ class ConvexHull:
     # naxis = negative axis, range of negative is according to x_range and y_range
     def generateRandomPoints(self,num_pt = 25,x_range=20,y_range=20,naxis = False):
         permutation = x_range * y_range
-        if (3*permutation/4)<num_pt:
+        if (7*permutation/10)<num_pt:
             raise ValueError('x_range={} and y_range={} is small to generate {} points'.format(x_range,y_range,num_pt))
         
         self.__pointList = []
@@ -274,7 +274,7 @@ def draw_line(pt_list):
 if __name__ == "__main__":
     ch = ConvexHull([[0, 32], [0, 7], [1, 34], [2, 16], [2, 43], [3, 26], [4, 17], [5, 3], [7, 48], [8, 33], [9, 28], [9, 24], [11, 44], [12, 39], [14, 12], [19, 4], [20, 19], [21, 42], [21, 46], [21, 16], [22, 25], [23, 12], [25, 2], [25, 47], [26, 16], [27, 10], [27, 31], [29, 2], [30, 32], [32, 25], [32, 6], [33, 12], [34, 22], [35, 6], [35, 19], [35, 13], [36, 27], [36, 9], [37, 1], [37, 7], [40, 2], [42, 34], [42, 12], [42, 41], [43, 39], [43, 29], [45, 1], [45, 15], [46, 15], [46, 12], [48, 30], [48, 31], [49, 24], [50, 41], [50, 50]])
     # draw_multiple_points(ch.getPointSpace())
-    ch.generateRandomPoints(55,50,50)
+    ch.generateRandomPoints(100,500,200)
     draw_multiple_points(ch.getPointSpace())
     ch.ConvexHull()
     plt.show()
