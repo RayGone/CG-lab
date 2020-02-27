@@ -110,11 +110,11 @@ class line:
         self._start = point(x,y)
 
     # getter methods
-    def getStartPoint(self):
+    def start(self):
         return self._start
     def getStartXY(self):
         return self._start._x,self._start._y
-    def getEndPoint(self):
+    def end(self):
         return self._end
     def getEndXY(self):
         return self._end._x,self._end._y
@@ -349,7 +349,9 @@ class polygon:
         for p in self._vertex:
             vl.append(p.getList())
 
-        if True:
+        if False:
+            # not using this as this doesn't work for all the cases
+            # only workaround to this is to use angular sorting
             center = 0
             ext_up = 0
             ext_low = 0
@@ -397,7 +399,12 @@ class polygon:
             self.__updateEdgeTable()
             return
         else:
-            pass
+            self._vertex = []
+            angular_sorted_points = pointSort_Angular(vl)
+            for pt in angular_sorted_points:
+                self._vertex.append(point(pt[0],pt[1]))
+            
+            self.__updateEdgeTable()
 
     def isConvex(self):
         previous = PLC_Types.COLLINEAR
@@ -436,6 +443,7 @@ class polygon:
         return True
 
     # Transforms Simple Concave Polygon to Multiple sub-convex polygons
+    # kinda Triangulization, thus Convex Sub-Polygonization
     def SubConvexPolygonization(self):
         if(self._isSimple and self._type==PLG_Types.CONCAVE):
             self.__init_index()
@@ -767,6 +775,27 @@ def pointSort_linear(array,axis=0):
             return array
         else:
             return [array[1],array[0]] #swaping
+    
+    if len(array) == 3:
+        tmp1 = pointSort_linear([array[0],array[1]])
+        tmp2 = pointSort_linear([tmp1[0],array[2]])
+        if tmp2[0] == array[2]:
+            tmp1.insert(0,tmp2[0])
+            return tmp1
+        else:
+            tmp3 = pointSort_linear([tmp1[1],array[2]])
+            tmp3.insert(0,tmp1[0])
+            return tmp3
+
+    flag_axis_value_same = True
+    t_pt = array[0]
+    for pt in array:
+        if(pt[axis] != t_pt[axis]):
+            flag_axis_value_same = False
+    
+    if(flag_axis_value_same):
+        return array
+
     # print(len(array),array)
     max_ax = array[0]
     min_ax = array[0]
@@ -776,11 +805,13 @@ def pointSort_linear(array,axis=0):
         if(pt[axis]<min_ax[axis]):
             min_ax = pt
 
+    # print(max_ax,min_ax)
     # if all the points have same axis-co-ordinate, then return array
     if(max_ax[axis] == min_ax[axis]):
         return array
 
-    center = math.ceil((max_ax[axis]+min_ax[axis])/2)
+    center = (max_ax[axis]+min_ax[axis])/2
+    # print(center)
 
     # print(max_ax,min_ax,center)
     left = []
@@ -791,9 +822,11 @@ def pointSort_linear(array,axis=0):
         else:
             right.append(pt)
 
+    # print('\nleft',left,"\nright",right)
     sorted_left = []
     # print(right)
     if len(left)>0:
+        # print(len(left))
         sorted_left = pointSort_linear(left,axis)
 
     sorted_right = []
@@ -801,6 +834,66 @@ def pointSort_linear(array,axis=0):
         sorted_right = pointSort_linear(right,axis) 
 
     return sorted_left+sorted_right
+
+def pointSort_Angular(array,ref_point = None):
+    
+    ly = ref_point 
+    # Reference Point if not given
+    # first find the point with lowest y-axis
+    if not ly:
+        ly = array[0]
+        for pt in array:
+            if pt[1]<ly[1]:
+                ly = pt
+
+    #compute angle of each point as per reference point i.e. point with lowest y-axis,ly
+    # it will contain list of tuples that contain (point,angle)
+    point_angle_tuple_list_negatives = [] 
+    point_angle_tuple_list_positives = [] 
+
+    # make of copy of array and remove point ly from it
+    tmp = array.copy()
+    tmp.remove(ly)
+    # for each point in array after removing point with lowest y-axis
+    for pt in tmp:
+        # calculate angle
+        angle = calculateAngle(ly,pt)
+        if angle<0:
+            point_angle_tuple_list_negatives.append((angle,pt))
+        else:
+            point_angle_tuple_list_positives.append((angle,pt))
+
+    point_angle_tuple_list_negatives = pointSort_linear(point_angle_tuple_list_negatives)
+    point_angle_tuple_list_positives = pointSort_linear(point_angle_tuple_list_positives)
+
+    point_angle_tuple_list_negatives.reverse()
+    point_angle_tuple_list_positives.reverse()
+    array = [ly]
+    for pt in point_angle_tuple_list_negatives:
+        array.append(pt[1])
+    for pt in point_angle_tuple_list_positives:
+        array.append(pt[1])
+    
+    return array
+
+    # sorting as per the angle --------------
+
+def calculateSlope(p1,p2):
+    yb = p2[1]
+    ya = p1[1]
+    xb = p2[0]
+    xa = p1[0]
+
+    dx = xb-xa
+    dy = yb-ya
+    if dy == 0 or dx == 0:
+        return 0
+    return dy/dx
+
+def calculateAngle(p1,p2):
+    slope = calculateSlope(p1,p2)
+    
+    return math.degrees(math.atan(slope))
 
 def removeDuplicateVertex(item_list):
     t_list = {}
@@ -824,9 +917,17 @@ if __name__ == '__main__':
     plg = polygon()
     plg.initialize(vertex_table)
     print(plg)
-    print(plg._isSimple,plg._type)
-    print(plg.PIT(point(3,1)))
-    print(plg.RayCasting(point(3,4)))
+    # print(plg._isSimple,plg._type)
+    # try:
+    #     print(plg.PIT(point(3,1)))
+    #     print(plg.RayCasting(point(3,4)))
+    
+    # except Exception:
+    #     pass
+
+    print(calculateAngle([314, 0], [111, -10]))
+    print(calculateAngle([314, 0],[35, 196]))
+    print(pointSort_Angular([[164, 2], [121, 5], [27, 21], [17, 26], [0, 43], [0, 188], [25, 194], [35, 196], [111, 200], [437, 200], [498, 198], [498, 42], [498, 16], [489, 1], [224, 1], [314, 0]]))
     # print(plg.SubConvexPolygonization())
     # print(intersection(line(point(6,7),point(5,5)),line(point(5,2),point(2,1))))
     # print(TurnTest(line(point(6,7),point(5,5)),point(5,2)))
