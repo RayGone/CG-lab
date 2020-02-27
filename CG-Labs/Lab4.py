@@ -1,6 +1,51 @@
 from geometry.shapes import *
 import matplotlib.pyplot as plt,random
 
+class STACK:
+    __value = None
+    length = 0
+    
+    def __init__(self):
+        self.__value = []
+
+    def initialize(self,value):
+        if iter(value):
+            if type(value) == type(list()):
+                self.__value = value
+                self.length = len(value)
+            
+            if type(value) == type(tuple()):
+                tmp = []
+                for v in value:
+                    tmp.append(v)
+                self.__value = tmp
+                self.length = len(value)
+
+    def push(self,value):
+        self.length += 1
+        self.__value.insert(0,value)
+
+    def pop(self):
+        if self.length > 0:
+            self.length -= 1
+            return self.__value.pop(0)
+
+        return None
+
+    def clear(self):
+
+        self.length = 0
+        self.__value = None
+
+    def dump(self):
+        return self.__value
+
+    def getValueAt(self,index):
+        return self.__value[index]
+
+    def __str__(self):
+        return str(self.__value)
+
 class ConvexHull:
     __point_space = []
     __hull_pts = []
@@ -25,6 +70,18 @@ class ConvexHull:
         self.__point_space.append(p)
 
     def giftwrap_algorithm(self,point_list):
+        # this implementation of giftwrap_algorithm is mixture of
+        ## 1. GiftWrap algorithm -> Doing turn test for left-most or right-most point from reference point
+        ###### is pretty much similar to looking for point with smallest slope to the reference point
+        ## 2. Divide and Conquer -> We compute convex hull by dividing point space into two, left and right.
+        ## 3. Quick Hull -> We use quick hull's approach to divide the point space i.e. by taking two extreme points,
+        ####
+        #### Instead of making traingles and performing Point Inclusion Test, we take GiftWrap approach.
+        ##### Initially, point is sorted linearly across x-axis (y-axis can be done too). thus left half and right are also sorted, automatically.
+        ###### Because of the sorted order of points, we can take advantage of this and take note of the index of the point last considered as hull
+        ####### Thus we don't have to do turnTest for those point which are before that the point last considered as hull
+        ########
+        
         # sorting to get extreme x-axis point
         point_list = pointSort_linear(point_list)
         # print(point_list)
@@ -173,15 +230,59 @@ class ConvexHull:
         # ref_turn = PLC_Types.RIGHT # extreme_points are at right turn of right part of the point space from the bisector line
         # right_hull = [en_pt]  # start from end point  of bisector_line for right hull        
 
+    def GrahamScan_Algorithm(self,point_list):
+        stk = STACK()
+        stk.initialize(pointSort_Angular(point_list))
+        # print(stk)
+        hull = STACK()
+        t_pt = stk.pop() # t_pt: temporary point
+        hull.push(point(t_pt[0],t_pt[1]))
+        t_pt = stk.pop()
+        hull.push(point(t_pt[0],t_pt[1]))
+
+        t_pt = stk.pop() # first check point
+        t_pt = point(t_pt[0],t_pt[1])
+        # print('first point to check',t_pt)
+        t_ln = line(hull.getValueAt(1),hull.getValueAt(0)) # t_ln: temporary line
+        
+        while stk.length != 0:
+            turn = TurnTest(t_ln,t_pt)
+            if turn == PLC_Types.RIGHT:
+                hull.push(t_pt)
+                t_ln = line(t_ln.end(),t_pt)
+                t_pt = stk.pop()
+                t_pt = point(t_pt[0],t_pt[1])
+            else:
+                hull.pop()
+                t_ln = line(hull.getValueAt(1),hull.getValueAt(0))
+        
+        self.__hull_pts = hull.dump()
+        self.__hull_pts.reverse()
+        self.__hull_pts.append(self.__hull_pts[0])
+
     def printConvexHull(self):
+
+        # ps = []
+        # for pt in self.__point_space:
+        #     ps.append(pt.getList())
+        # print('point space: ',ps,'\n')
         print(self.__ConvexHull)
 
-    def ConvexHull(self):
+    def ConvexHull(self,algorithm = 'giftwrap'):
         list_array = []
         for p in self.__point_space:
             list_array.append(p.getList())
 
-        self.giftwrap_algorithm(list_array)
+        if(algorithm == 'giftwrap'):
+            print("Using GiftWrap Algorithm")
+            self.giftwrap_algorithm(list_array)
+        
+        elif(algorithm == 'grahamscan'):
+            print("Using Graham Scan Algorithm")
+            self.GrahamScan_Algorithm(list_array)
+
+        else:
+            return
 
         self.__ConvexHull.initialize(self.__hull_pts,sort=False)
 
@@ -235,7 +336,6 @@ class ConvexHull:
             num_pt -= 1
         pass
     
-
 def draw_multiple_points(pt_list,p_size = 20):
     # x axis value list.
     x_number_list = []
@@ -298,11 +398,12 @@ def draw_line(pt_list):
 
 
 if __name__ == "__main__":
-    ch = ConvexHull([[0, 32], [0, 7], [1, 34], [2, 16], [2, 43], [3, 26], [4, 17], [5, 3], [7, 48], [8, 33], [9, 28], [9, 24], [11, 44], [12, 39], [14, 12], [19, 4], [20, 19], [21, 42], [21, 46], [21, 16], [22, 25], [23, 12], [25, 2], [25, 47], [26, 16], [27, 10], [27, 31], [29, 2], [30, 32], [32, 25], [32, 6], [33, 12], [34, 22], [35, 6], [35, 19], [35, 13], [36, 27], [36, 9], [37, 1], [37, 7], [40, 2], [42, 34], [42, 12], [42, 41], [43, 39], [43, 29], [45, 1], [45, 15], [46, 15], [46, 12], [48, 30], [48, 31], [49, 24], [50, 41], [50, 50]])
+    ch = ConvexHull([[152, 2], [52, 21], [23, 64], [27, 370], [47, 387], [284, 396], [421, 397], [465, 390], [476, 368], [498, 270], [496, 76], [345, 9], [328, 7]])
     # draw_multiple_points(ch.getPointSpace())
     ch.generateRandomPoints(150,500,400)
     # draw_multiple_points(ch.getPointSpace())
-    ch.ConvexHull()
-    ch.DrawExtremePointsWithPointSpace()
+    ch.ConvexHull('grahamscan')
+    # ch.GrahamScan_Algorithm([[0, 32], [0, 7], [1, 34], [2, 16], [2, 43], [3, 26], [4, 17], [5, 3], [7, 48], [8, 33], [9, 28], [9, 24], [11, 44], [12, 39], [14, 12], [19, 4], [20, 19], [21, 42], [21, 46], [21, 16], [22, 25], [23, 12], [25, 2], [25, 47], [26, 16], [27, 10], [27, 31], [29, 2], [30, 32], [32, 25], [32, 6], [33, 12], [34, 22], [35, 6], [35, 19], [35, 13], [36, 27], [36, 9], [37, 1], [37, 7], [40, 2], [42, 34], [42, 12], [42, 41], [43, 39], [43, 29], [45, 1], [45, 15], [46, 15], [46, 12], [48, 30], [48, 31], [49, 24], [50, 41], [50, 50]])
+    # ch.DrawExtremePointsWithPointSpace()
     # ch.DrawExtremeEdgesWithPointSpace()
     ch.Draw()
