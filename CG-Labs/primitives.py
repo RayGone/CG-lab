@@ -8,10 +8,57 @@ Created on Mon Nov 11 15:42:40 2019
 from graphics import *
 import math
 
+
+class Grid(GraphWin):
+    def __init__(self, title="Graphics Window",
+                 width=200, height=200, autoflush=True):
+        GraphWin.__init__(self,title,width,height,autoflush)
+        self.origin = {'x':(self.width/2),'y':(self.height/2)}
+        self.drawGrid()
+        self.setBackground(color_rgb(200,200,200))
+
+    def drawGrid(self):
+        #drawing axis lines
+        
+        # l1 = Line(Point(0,self.origin['y']),Point(self.width,self.origin['y']))
+        # l1.draw(self)
+        # l1.setArrow('both')
+        # l2 = Line(Point(self.origin['x'],0),Point(self.origin['x'],self.height))
+        # l2.draw(self)
+        # l2.setArrow('both')
+        # Point(self.origin['x'],self.origin['y']).draw(self)
+        # Point(self.origin['x']-1,self.origin['y']).draw(self)
+        # Point(self.origin['x'],self.origin['y']-1).draw(self)
+        # Point(self.origin['x']-1,self.origin['y']-1).draw(self)
+        
+        #drawing grids
+        for x in range(math.ceil(self.origin['x']/10)):
+            # if x==0:
+            #     continue            
+            #x-axis
+            self.create_line((self.origin['x']+x*10),0,(self.origin['x']+x*10),self.height,fill=color_rgb(173, 235, 255))
+            self.create_line((self.origin['x']-x*10),0,(self.origin['x']-x*10),self.height,fill=color_rgb(173, 235, 255))
+            #y-axis
+            self.create_line(0,self.origin['y']+x*10,self.width,self.origin['y']+x*10,fill=color_rgb(173, 235, 255))
+            self.create_line(0,self.origin['y']-x*10,self.width,self.origin['y']-x*10,fill=color_rgb(173, 235, 255))
+    
+        #drawing indication lines 10 pixel apart
+        # for x in range(math.ceil(self.origin['x']/10)):
+        #     if x==0:
+        #         continue            
+        #     #x-axis
+        #     self.create_line((self.origin['x']+x*10),self.origin['y']-4,(self.origin['x']+x*10),self.origin['y']+4)
+        #     self.create_line((self.origin['x']-x*10),self.origin['y']-4,(self.origin['x']-x*10),self.origin['y']+4)
+        #     #y-axis
+        #     self.create_line(self.origin['x']-4,self.origin['y']+x*10,self.origin['x']+4,self.origin['y']+x*10)
+        #     self.create_line(self.origin['x']-4,self.origin['y']-x*10,self.origin['x']+4,self.origin['y']-x*10)
+
+        pass
+
 # =============================================================================
 # class Pointt and LineSegment is build as part of Lab1:
 # =============================================================================
-    
+ 
 class Pointt:
     xc = None
     yc = None
@@ -35,6 +82,9 @@ class Pointt:
     def draw(self,window,color='black'):
         c = Point(self.xc,self.yc)
         c.draw(window)
+
+    def clone(self):
+        return Pointt(self.xc,self.yc)
         
 
 class LineSegment:
@@ -61,6 +111,9 @@ class LineSegment:
         cls.Point_B = p2
         return cls
     
+    def reverse(self):
+        return LineSegment(self.Point_B,self.Point_A)
+
     def BresenhamLine(self):   
         point_list = []
         
@@ -238,10 +291,10 @@ class Operations:
         
     @staticmethod
     def getLineSegmentFromInput():
-        print("Input start point of the line, A:")
+        print("Input start point of the line:")
         p1 = Operations.getPointFromInput()
         print()
-        print("Input terminal point of the line, B:")
+        print("Input terminal point of the line:")
         p2 = Operations.getPointFromInput()
         print()
         return LineSegment(p1,p2)
@@ -260,10 +313,13 @@ class Operations:
     @staticmethod
     def isCollinear(line: LineSegment,point: Pointt):
         if type(line)!=type(LineSegment()):
-            return 'notlinesegment'
+            return False
         if type(point)!=type(Pointt()):
-            return 'notpointt'
+            return False
         
+        if (line.Point_A.xc == point.xc and line.Point_A.yc == point.yc) or (line.Point_B.xc == point.xc and line.Point_B.yc == point.yc):
+            return 'end_point'
+
         area = Operations.Three_Point_Area(line.Point_A,line.Point_B,point)
         
         if area==0:
@@ -285,25 +341,55 @@ class Operations:
             return False  
         
     @staticmethod
-    def where_is_it(line: LineSegment,point: Pointt):
+    def turnTest(line: LineSegment,point: Pointt):
         if type(line)!=type(LineSegment()):
             return 'notlinesegment'
         if type(point)!=type(Pointt()):
             return 'notpointt'
         
         area = Operations.Three_Point_Area(line.Point_A ,line.Point_B ,point)
-        # =============================================================================
-        # here the logic is opposite to actual co-ordinate geometry
-        # and it is because in co-ordinate geometry, y-axis goes-up-increasing
-        # where in computer-graphics, y-axis goes-down-increasing
-        # =============================================================================
+
         if area<0:
-            return 'right'
-        elif area>0:
             return 'left'
+        elif area>0:
+            return 'right'
         else:
             return 'collinear'
-        
+
+    @staticmethod
+    def intersects(line1: LineSegment,line2: LineSegment):
+        test_a1 = Operations.turnTest(line1,line2.Point_A)
+        if test_a1 == 'collinear':
+            temp = Operations.isCollinear(line1,line2.Point_A)
+            if (temp == 'between' or temp == 'end_point'):
+                return 'intersection'
+            temp = Operations.isCollinear(line2,line1.Point_A)
+            print(temp)
+            if (temp == 'between' or temp == 'end_point'):
+                return 'intersection'
+
+        test_b1 = Operations.turnTest(line1,line2.Point_B)
+        if test_b1 == 'collinear':
+            temp = Operations.isCollinear(line1,line2.Point_B)
+            if (temp == 'between' or temp == 'end_point'):
+                return 'intersection'
+            
+            temp = Operations.isCollinear(line2,line1.Point_B)
+            print(temp)
+            if (temp == 'between' or temp == 'end_point'):
+                return 'intersection'
+
+
+        if test_a1 == test_b1:
+            return 'non_intersection' 
+
+        test_a2 = Operations.turnTest(line1.reverse(),line2.Point_A)
+        test_b2 = Operations.turnTest(line1.reverse(),line2.Point_B)
+
+        if test_a1 != test_a2 and test_b1 != test_b2:
+            return 'intersection'
+
+        return 'non_intersection'        
 
 
 if __name__ == '__main__':
@@ -311,8 +397,7 @@ if __name__ == '__main__':
     print("Dimension of the canvas is 500x500")
     print()
     try:
-        pass
-        win = GraphWin("graph primitives", 500, 500)
+        win = Grid("graph primitives", 500, 500)
         line = LineSegment(Pointt(200,20),Pointt(250,250))
         line.draw(win)
         line.Point_A.draw(win)
@@ -327,7 +412,7 @@ if __name__ == '__main__':
 
         line2.Point_A.draw(win)
         line2.Point_B.draw(win)
-        stat = Operations.where_is_it(line,point)  
+        stat = Operations.turnTest(line,point)  
         print(stat) 
         input()
         win.close()
